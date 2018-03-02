@@ -2,23 +2,21 @@
 
 Please note the structure of this repo as outlined in this document, as well, as key aspects of this project.
 
-| -- Src 
+	| -- Src 
 
-  | -- data 
-			
-      | -- LibraryInstaller.R
-      | -- DefineFunctions.R
+		| -- LibraryInstaller.R
+	
+		| -- DefineFunctions.R 
 
-| -- Data  
+	| -- data 
 
-	| -- raw 
-			| -- (To be added)
-	| -- processed
-			| -- (To be produce)
-      
-  | -- References  
+		| -- raw 
+	
+		| -- processed
+			      
+	  | -- References  
   
-			| -- README.md
+		| -- README.md
 
 
 ##Project outline
@@ -30,6 +28,17 @@ End date: __May, 2018__ (tentative)
 This project is based on the Kaggle competition on "House Prices: Advanced Regression Techniques".
   
 The data is available at:https://www.kaggle.com/c/house-prices-advanced-regression-techniques
+
+__Outcomes__: 
+
+1. Executive report with findings, including but not limited to:
+
+* Different predictive models
+
+* The pros and cons of each model
+
+* Reflections and Recommendations
+
 
 ###Phase 0: Project Setup
 * Create Repo, folders, and outline tasks.
