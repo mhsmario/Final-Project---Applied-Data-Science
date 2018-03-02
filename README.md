@@ -21,6 +21,8 @@ Please note the structure of this repo as outlined in this document, as well, as
 
 ##Project outline
 
+Group Member: Mario Saraiva, Lizhizi Cui
+
 Start date: __March 01, 2018__
 
 End date: __May, 2018__ (tentative)
