@@ -25,9 +25,9 @@ Start date: __March 01, 2018__
 
 End date: __May, 2018__ (tentative)
 
-This project is based on the Kaggle competition on "House Prices: Advanced Regression Techniques".
+This project is based on _______ { (the Kaggle competition on "House Prices: Advanced Regression Techniques") or (the Thomson Reuters data on business performance and sustainability) }.
   
-The data is available at:https://www.kaggle.com/c/house-prices-advanced-regression-techniques
+The data is available at:{ ( https://www.kaggle.com/c/house-prices-advanced-regression-techniques ) or ( from Thomson Reuters terminal at Columbia Business School.) ]
 
 __Outcomes__: 
 
