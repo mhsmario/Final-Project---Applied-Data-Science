@@ -53,7 +53,11 @@ __Outcomes__:
 * Extract important input variables for the analysis
 * Identify outliers
 * Identity patterns (if any).
-* Define the problem/purpose of the project
+* Make a ranked list of important input variables for the analysis
+* Have a sense of robustness of conclusions(sample biased)
+* Conclusion as to whether individual factors are statistically significant
+* Uncertainties for important estimates 
+* Define the problem/purpose of the project(assumptions)
 
 ###Phase 2: Design different models to be tested.
 
