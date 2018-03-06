@@ -15,7 +15,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ##If not working on your own machine use this code to speed up the setup:
 
-install.packages(c("corrplot", "shiny", "dplyr", "ggplot2", "e1071", "glmnet", "mice", "lattice", "VIM", "stargazer", "RColorBrewer", "ggfortify", "gam", "caret", "flam", "bartMachine", "tree", "ISLR", "ggfortify", "purr", "tidyr", "RColorBrewer", "readr"))
+#install.packages(c("corrplot", "shiny", "dplyr", "ggplot2", "e1071", "glmnet", "mice", "lattice", "VIM", "stargazer", "RColorBrewer", "ggfortify", "gam", "caret", "flam", "bartMachine", "tree", "ISLR", "ggfortify", "purr", "tidyr", "RColorBrewer", "readr"))
 
 library(glmnet)
 library(purrr)
@@ -126,46 +126,93 @@ shinyApp(
 ##Explore missing values
 
 ```{r, warning=FALSE, message=FALSE}
-sum(is.na(train))
+na_count <-sapply(train, function(y) sum(length(which(is.na(y)))))
+na_count <- data.frame(na_count)
 
-maping_nas <- aggr(train, plot = FALSE, col = c('navyblue','red'), numbers = TRUE, sortVars = TRUE, labels = names(train), prop = FALSE)
-
-sumnas <- as.matrix(summary(train))
-
-plot_nas <- aggr(train, plot = TRUE, col =  c('navyblue','lightblue'), numbers = TRUE, sortVars = TRUE, labels = names(train), cex.axis = .5, gap = 1, ylab = c("Histogram of missing data","Pattern"), prop = TRUE, digits = "2")
+# maping_nas <- aggr(train, plot = FALSE, col = c('navyblue','red'), numbers = TRUE, sortVars = TRUE, labels = names(train), prop = FALSE)
+# 
+# sumnas <- as.matrix(summary(train))
+# 
+# plot_nas <- aggr(train, plot = TRUE, col =  c('navyblue','lightblue'), numbers = TRUE, sortVars = TRUE, labels = names(train), cex.axis = .5, gap = 1, ylab = c("Histogram of missing data","Pattern"), prop = TRUE, digits = "2")
 ```
 
+Most missing: "PoolQC", "MiscFeature", "Alley", "Fence", "FireplaceQu", "LotFrontage"
+
+Variable | Count of Missing
+---------|-----------------
+PoolQC | 1453
+MiscFeature | 1406
+Alley | 1369
+Fence | 1179
+FireplaceQu | 690
+LotFrontage | 259
+GarageType | 81
+GarageYrBlt | 81
+GarageFinish | 81
+GarageQual81
+GarageCond | 81
+BsmtExposur | 38
+BsmtFinType2 | 38
+BsmtQual | 37
+BsmtCond | 37
+BsmtFinType1 | 37
+MasVnrType | 8
 
 
 ```{r}
 
-qlc <- na.omit(ql)
+drop.na.columns <- c("PoolQC", "MiscFeature", "Alley", "Fence", "FireplaceQu", "LotFrontage")
 
+ql.minus.nas <- ql[ , !(names(ql) %in% drop.na.columns)]
+
+qlc <- na.omit(ql.minus.nas)
+
+```
+
+```{r}
 #Exploring the data through different graphs
 
+##UNDER CONSTRUCTION
 
-
-shinyApp(
-  ui = fillPage(
-    fillCol(flex = c(NA, 1),
-      inputPanel(
-        selectInput("xcol", label = "X-axis", 
-                    names(qtc)),
-        selectInput("n_breaks", label = "Number of bins:",
-                    choices = c(10, 20, 35, 55), selected = 35)
-        ),
-      plotOutput("plot", height = "100%")
+#Shinny #2
+shinyApp( 
+  
+ui <- fluidPage(    
+  
+  # Give the page a title
+  titlePanel("Categorical variables"),
+  
+  # Generate a row with a sidebar
+  sidebarLayout(      
+    
+    # Define the sidebar with one input
+    sidebarPanel(
+      selectInput("Categorical Variable", "Region:", 
+                  choices=colnames(qlc)),
+      hr(),
+      helpText("Data from House Sales - Kaggle.")
+    ),
+    
+    # Create a spot for the barplot
+    mainPanel(
+      plotOutput("phonePlot")  
     )
-  ),
-  server = function(input, output) {
-    output$plot = renderPlot( {
-      hist(kvars[,input$xcol], 
-         probability = TRUE, 
-         breaks = as.numeric(input$n_breaks),
-         xlab = "Score", 
-         main = "Distribution of key variables (including Y)") }
-  )},
-  options = list(height = 700)
-)
+   ),
+
+server = # Define a server for the Shiny app
+function(input, output) {
+  
+  # Fill in the spot we created for a plot
+  output$phonePlot <- renderPlot({
+    
+    # Render a barplot
+    barplot(qlc[,input$region]*1000, 
+            main=input$region,
+            ylab="Number of Telephones",
+            xlab="Year")
+  })
+}
+ )
+)  
 ```
 
