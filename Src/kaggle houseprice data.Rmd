@@ -1,0 +1,84 @@
+---
+title: "Untitled"
+author: "LizhiziCui"
+date: "2/28/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+train <- read.csv('/Users/lizhizicui/Desktop/Dataset/Kaggle House Price/train.csv')
+test <- read.csv('/Users/lizhizicui/Desktop/Dataset/Kaggle House Price/test.csv')
+```
+
+
+##There are 1460 instances of training data and 1460 of test data. Total number of attributes equals 81, of which 36 is quantitative, 43 categorical + Id and SalePrice.##
+
+Quantitative: 1stFlrSF, 2ndFlrSF, 3SsnPorch, BedroomAbvGr, BsmtFinSF1, BsmtFinSF2, BsmtFullBath, BsmtHalfBath, BsmtUnfSF, EnclosedPorch, Fireplaces, FullBath, GarageArea, GarageCars, GarageYrBlt, GrLivArea, HalfBath, KitchenAbvGr, LotArea, LotFrontage, LowQualFinSF, MSSubClass, MasVnrArea, MiscVal, MoSold, OpenPorchSF, OverallCond, OverallQual, PoolArea, ScreenPorch, TotRmsAbvGrd, TotalBsmtSF, WoodDeckSF, YearBuilt, YearRemodAdd, YrSold
+
+Qualitative: Alley, BldgType, BsmtCond, BsmtExposure, BsmtFinType1, BsmtFinType2, BsmtQual, CentralAir, Condition1, Condition2, Electrical, ExterCond, ExterQual, Exterior1st, Exterior2nd, Fence, FireplaceQu, Foundation, Functional, GarageCond, GarageFinish, GarageQual, GarageType, Heating, HeatingQC, HouseStyle, KitchenQual, LandContour, LandSlope, LotConfig, LotShape, MSZoning, MasVnrType, MiscFeature, Neighborhood, PavedDrive, PoolQC, RoofMatl, RoofStyle, SaleCondition, SaleType, Street, Utilities,
+
+```{R, EDA}
+
+summary(train)
+summary(test)
+hist(train$SalePrice, breaks=seq(30000, 760000, 500),prob=TRUE )
+lines(density(train$SalePrice), col="blue", lwd=2)       
+lines(density(train$SalePrice, adjust=2), lty="dotted")
+
+
+library(ggplot2)
+
+
+hist(train$SalePrice, breaks=seq(30000, 760000, 2000),prob=TRUE )
+lines(density(train$SalePrice), col="blue", lwd=2)       
+# indicate not a standard normal distribution
+
+# Log the SalePrice, the distribution of log(SalePrice) looks like a normal distribution
+train$log_saleprice <- log(train$SalePrice)
+train$log_saleprice
+hist(train$log_saleprice, breaks=seq(10, 14, 0.025),prob=TRUE )
+lines(density(train$log_saleprice), col="blue", lwd=2)      
+
+library(purrr)
+library(tidyr)
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(corrplot)
+library(RColorBrewer)
+
+
+is.numeric(train$)
+is.factor(train$Electrical)
+
+qt <- train %>% keep(is.numeric)
+ql <- train %>% keep(is.factor)
+
+hist(train$log_saleprice,prob=TRUE )
+lines(density(train$log_saleprice), col="blue", lwd=2) 
+
+boxplot(SalePrice~BldgType,data=train, main="SalePrince vs Type of dwelling", 
+  	xlab="Type of dwelling", ylab="SalePrince")
+
+corrplot(cor(qt), diag = FALSE, method = "number")
+
+col <- brewer.pal(4,"RdYlBu") #selecting color palette
+library(RColorBrewer)
+corrplot(cor(qt, use = "complete.obs"), col = col, tl.cex = 0.6, number.cex = .6, title = "Correlation between (numeric) Variables", type = "upper", mar = c(1,0,1,0), diag = FALSE, method = "square")
+
+```
+
+
+
+```{r cars}
+summary(cars)
+```
+
+
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
