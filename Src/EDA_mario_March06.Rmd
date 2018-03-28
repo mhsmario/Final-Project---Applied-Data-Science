@@ -9,7 +9,7 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
+## Loading Libraries
 ```{r}
 ##Libraries
 
@@ -42,12 +42,24 @@ library(RColorBrewer)
 library(ggfortify)
 library(scales)
 library(stargazer)
+library(rsconnect)
+library(knitr)
+library(gridExtra)
+library(scales)
+library(Rmisc)
+library(ggrepel)
+library(randomForest)
+library(psych)
+
 ```
 
-#Load Data
+#Load Data and combining test and train sets
 ```{r}
-train <- read.csv('train.csv')
-#test <- read.csv('/Users/lizhizicui/Desktop/Dataset/Kaggle House Price/test.csv')
+train <- read.csv('/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Raw/train.csv')
+test <- read.csv('/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Raw/test.csv')
+
+test$SalePrice <- NA
+all <- rbind(train,test)
 ```
 
 
@@ -57,6 +69,7 @@ Quantitative: 1stFlrSF, 2ndFlrSF, 3SsnPorch, BedroomAbvGr, BsmtFinSF1, BsmtFinSF
 
 Qualitative: Alley, BldgType, BsmtCond, BsmtExposure, BsmtFinType1, BsmtFinType2, BsmtQual, CentralAir, Condition1, Condition2, Electrical, ExterCond, ExterQual, Exterior1st, Exterior2nd, Fence, FireplaceQu, Foundation, Functional, GarageCond, GarageFinish, GarageQual, GarageType, Heating, HeatingQC, HouseStyle, KitchenQual, LandContour, LandSlope, LotConfig, LotShape, MSZoning, MasVnrType, MiscFeature, Neighborhood, PavedDrive, PoolQC, RoofMatl, RoofStyle, SaleCondition, SaleType, Street, Utilities,
 
+## EDA of outcome variable: SalePrice
 ```{R, EDA}
 
 # summary(train)
@@ -64,10 +77,9 @@ Qualitative: Alley, BldgType, BsmtCond, BsmtExposure, BsmtFinType1, BsmtFinType2
 hist(train$SalePrice, breaks=seq(30000, 760000, 500),prob=TRUE )
 lines(density(train$SalePrice), col="blue", lwd=2)       
 lines(density(train$SalePrice, adjust=2), lty="dotted")
+summary(train$SalePrice)
 
-hist(train$SalePrice, breaks=seq(30000, 760000, 2000),prob=TRUE )
-lines(density(train$SalePrice), col="blue", lwd=2)       
-# indicate not a standard normal distribution
+# SalePrice does not have a standard normal distribution, it is right skewed
 
 # Log the SalePrice, the distribution of log(SalePrice) looks like a normal distribution
 train$log_saleprice <- log(train$SalePrice)
@@ -75,29 +87,36 @@ train$log_saleprice
 hist(train$log_saleprice, breaks=seq(10, 14, 0.025),prob=TRUE )
 lines(density(train$log_saleprice), col="blue", lwd=2)      
 
-is.factor(train$Electrical)
+```
+## Correlation with SalePrice
 
-qt <- train %>% keep(is.numeric)
-ql <- train %>% keep(is.factor)
+What numeric variables correlated with SalePrice
+```{R, EDA}
+all$Id <- rownames(all)
+numericVars <- which(sapply(all, is.numeric))
+numericVarNames <- names(numericVars)
+length(numericVars)
 
-hist(train$log_saleprice,prob=TRUE )
-lines(density(train$log_saleprice), col="blue", lwd=2) 
 
-boxplot(SalePrice~BldgType,data=train, main="SalePrince vs Type of dwelling", 
-  	xlab="Type of dwelling", ylab="SalePrince")
+all_numVar <- all[, numericVars]
+cor_numVar <- cor(all_numVar, use="pairwise.complete.obs") #correlations of all numeric variables
 
-# corrplot(cor(qt), diag = FALSE, method = "number")
+#sort on decreasing correlations with SalePrice
+cor_sorted <- as.matrix(sort(cor_numVar[,'SalePrice'], decreasing = TRUE))
+ #select only high corelations
+CorHigh <- names(which(apply(cor_sorted, 1, function(x) abs(x)>0.5)))
+cor_numVar <- cor_numVar[CorHigh, CorHigh]
 
-col <- brewer.pal(4,"RdYlBu") #selecting color palette
-
-#corrplot(cor(qt, use = "complete.obs"), col = col, tl.cex = 0.6, number.cex = .6, title = "Correlation between (numeric) Variables", type = "upper", mar = c(1,0,1,0), diag = FALSE, method = "square")
+corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt")
 
 ```
-
+According to the correlation table, variable 'Overall Quality'(Overall material and finish quality), the 'GrLivArea' (‘Above Grade’ Living Area) and 'GarageCars'(Size of garage in car capacity) are the top 3 variables that highly correlated to SalePrice.
+For the rest,it is also clear the multicollinearity is an issue. For example: the correlation between GarageCars and GarageArea is very high (0.89), and both have similar (high) correlations with SalePrice. The other 6 six variables with a correlation higher than 0.5 with SalePrice are: -TotalBsmtSF: Total square feet of basement area -1stFlrSF: First Floor square feet -FullBath: Full bathrooms above grade -TotRmsAbvGrd: Total rooms above grade (does not include bathrooms) -YearBuilt: Original construction date -YearRemodAdd: Remodel date (same as construction date if no remodeling or additions)
 
 ##Distribution of our quantitative variables
 ```{r}
-
+qt <- train %>% keep(is.numeric)
+ql <- train %>% keep(is.factor)
 qtc <- na.omit(qt)
 
 ### Shiny uses only numerical variables.
@@ -121,6 +140,42 @@ shinyApp(
 )
 
 ```
+## Overall Quality 
+Overall Quality is observed to have positive correlation with SalePrice. It does not seem to have noticeble outliers apart from a point in level 4. 
+```{r}
+ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallQual), y=SalePrice))+
+        geom_boxplot() + labs(x='Overall Quality') +
+        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
+```
+
+## 'GrLivArea' (‘Above Grade’ Living Area)
+GrLivArea is observed to have positive correlation with SalePrice, which make sense since big houses are generally more expensive than smaller. One thing worth noticing is that there are two houses with really large living areas and low SalePrice (potential to be outliers). I checked the data and found out they are houses 524, 1299 and 2550(NA for SalePrice).
+```{r}
+ggplot(data=all[!is.na(all$SalePrice),], aes(x=GrLivArea, y=SalePrice))+
+        geom_point(col='black') + geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1)) +
+        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
+outlier1 <- all%>% filter(GrLivArea > 4500)
+outlier1$Id
+all[c(524, 1299, 2550), c('SalePrice', 'GrLivArea', 'OverallQual')]
+
+```
+
+## GarageCars
+The Size of garage shows a positive correlation with SalePrice from level 0-3 but fall at level 4 (non-linear correlation). It make sense because only big houses have large garage, and bigger house usually have higher SalePrice. Also for houses with a garage of capacity of 3 cars(level 3), there are several outliners with much higher SalePrice existing, it must be other factors affecting the outcome price. Something might happen for houses with level 4 garage that needed to explained.
+```{r}
+
+summary(all$GarageCars)
+ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(GarageCars), y=SalePrice))+
+        geom_boxplot() + labs(x='Size of Garage/car') +
+        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
+
+outlier2 <- all %>% 
+  filter(GarageCars == 3)%>%
+  filter(SalePrice > 700000)
+
+outlier2$Id
+all[c(524, 1299, 692, 1183), c('SalePrice', 'GrLivArea', 'OverallQual','GarageCars')]
+```
 
 
 ##Explore missing values
@@ -140,7 +195,7 @@ Most missing: "PoolQC", "MiscFeature", "Alley", "Fence", "FireplaceQu", "LotFron
 
 Variable | Count of Missing
 ---------|-----------------
-PoolQC | 1453
+PoolQC | 1453 (PoolQC: Pool quality)
 MiscFeature | 1406
 Alley | 1369
 Fence | 1179
@@ -149,7 +204,7 @@ LotFrontage | 259
 GarageType | 81
 GarageYrBlt | 81
 GarageFinish | 81
-GarageQual81
+GarageQual | 81
 GarageCond | 81
 BsmtExposur | 38
 BsmtFinType2 | 38
@@ -159,13 +214,151 @@ BsmtFinType1 | 37
 MasVnrType | 8
 
 
+PoolQC: Pool quality
+		
+       Ex	Excellent
+       Gd	Good
+       TA	Average/Typical
+       Fa	Fair
+       NA	No Pool
+       
+MiscFeature: Miscellaneous feature not covered in other categories
+		
+       Elev	Elevator
+       Gar2	2nd Garage (if not described in garage section)
+       Othr	Other
+       Shed	Shed (over 100 SF)
+       TenC	Tennis Court
+       NA	None
+       
+Alley: Type of alley access to property
+
+       Grvl	Gravel
+       Pave	Paved
+       NA 	No alley access     
+       
+Fence: Fence quality
+		
+       GdPrv	Good Privacy
+       MnPrv	Minimum Privacy
+       GdWo	Good Wood
+       MnWw	Minimum Wood/Wire
+       NA	No Fence     
+       
+FireplaceQu: Fireplace quality
+
+       Ex	Excellent - Exceptional Masonry Fireplace
+       Gd	Good - Masonry Fireplace in main level
+       TA	Average - Prefabricated Fireplace in main living area or Masonry Fireplace in basement
+       Fa	Fair - Prefabricated Fireplace in basement
+       Po	Poor - Ben Franklin Stove
+       NA	No Fireplace   
+       
+GarageType: Garage location (**smae for GarageYrBlt/GarageFinish/GarageCars/GarageArea/GarageQual/GarageCond)
+		
+       2Types	More than one type of garage
+       Attchd	Attached to home
+       Basment	Basement Garage
+       BuiltIn	Built-In (Garage part of house - typically has room above garage)
+       CarPort	Car Port
+       Detchd	Detached from home
+       NA	No Garage    
+       
+BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/BsmtFinSF1/BsmtFinType2/BsmtFinSF2/BsmtUnfSF/BsmtQual)
+
+       Gd	Good Exposure
+       Av	Average Exposure (split levels or foyers typically score average or above)	
+       Mn	Mimimum Exposure
+       No	No Exposure
+       NA	No Basement
+       
+#MasVnrType (Masonry veneer type) and LotFrontage (Linear feet of street connected to property) should not have NA in priciple.  
+
+```{r}
+all$PoolQC[is.na(all$PoolQC)] <- 'No Pool'
+Qualities <- c('None' = 0, 'Po' = 1, 'Fa' = 2, 'TA' = 3, 'Gd' = 4, 'Ex' = 5)
+all$PoolQC<-as.integer(revalue(all$PoolQC, Qualities))
+table(all$PoolQC)
+
+all$MiscFeature[is.na(all$MiscFeature)] <- 'No Feature'
+table(all$MiscFeature)
+
+all$Alley <- as.factor(all$Alley)
+all$Alley[is.na(all$Alley)] <- 'No Alley'
+table(all$Alley)
+
+all$Fence[is.na(all$Fence)] <- 'No Fence'
+table(all$Fence)
+
+all$FireplaceQu[is.na(all$FireplaceQu)] <- 'No Fireplace'
+all$FireplaceQu<-as.integer(revalue(all$FireplaceQu, Qualities))
+table(all$FireplaceQu)
+
+#GarageYrBlt/GarageFinish/GarageCars/GarageArea/GarageQual/GarageCond
+all$GarageType[is.na(all$GarageType)] <- 'No Garage'
+all$GarageType <- as.factor(all$GarageType)
+table(all$GarageType)
+
+all$GarageYrBlt[is.na(all$GarageYrBlt)] <- 'No Garage'
+all$GarageYrBlt <- as.factor(all$GarageYrBlt)
+table(all$GarageYrBlt)
+
+all$GarageFinish[is.na(all$GarageFinish)] <- 'No Garage'
+all$GarageFinish <- as.factor(all$GarageFinish)
+table(all$GarageFinish)
+
+all$GarageCars[is.na(all$GarageCars)] <- 'No Garage'
+all$GarageCars <- as.factor(all$GarageCars)
+table(all$GarageCars)
+
+all$GarageArea[is.na(all$GarageArea)] <- 'No Garage'
+all$GarageArea <- as.factor(all$GarageArea)
+table(all$GarageArea)
+
+all$GarageQual[is.na(all$GarageQual)] <- 'No Garage'
+all$GarageQual <- as.factor(all$GarageQual)
+table(all$GarageQual)
+
+all$GarageCond[is.na(all$GarageCond)] <- 'No Garage'
+all$GarageCond <- as.factor(all$GarageCond)
+table(all$GarageCond)
+
+#BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/BsmtFinSF1/BsmtFinType2/BsmtFinSF2/BsmtUnfSF/BsmtQual)
+all$BsmtQual[is.na(all$BsmtQual)] <- 'No Basement'
+all$BsmtQual<-as.integer(revalue(all$BsmtQual, Qualities))
+table(all$BsmtQual)
+
+all$BsmtExposure[is.na(all$BsmtExposure)] <- 'No Basement'
+all$BsmtExposure<-as.integer(revalue(all$BsmtExposure, Qualities))
+table(all$BsmtExposure)
+
+all$BsmtFinType1[is.na(all$BsmtFinType1)] <- 'No Basement'
+all$BsmtFinType1<-as.integer(revalue(all$BsmtFinType1, Qualities))
+table(all$BsmtFinType1)
+
+all$BsmtFinType2[is.na(all$BsmtFinType2)] <- 'No Basement'
+all$BsmtFinType2<-as.integer(revalue(all$BsmtFinType2, Qualities))
+table(all$BsmtFinType2)
+
+all$BsmtUnfSF[is.na(all$BsmtUnfSF)] <- 'No Basement'
+all$BsmtUnfSF<-as.integer(revalue(all$BsmtUnfSF, Qualities))
+table(all$BsmtUnfSF)
+
+all$BsmtFinSF1[is.na(all$BsmtFinSF1)] <- 'No Basement'
+all$BsmtFinSF1<-as.integer(revalue(all$BsmtFinSF1, Qualities))
+table(all$BsmtFinSF1)
+
+all$BsmtFinSF2[is.na(all$BsmtFinSF2)] <- 'No Basement'
+all$BsmtFinSF2<-as.integer(revalue(all$BsmtFinSF2, Qualities))
+table(all$BsmtFinSF2)
+
+```
+
 ```{r}
 
-drop.na.columns <- c("PoolQC", "MiscFeature", "Alley", "Fence", "FireplaceQu", "LotFrontage")
+drop.na.columns <- c( "MasVnrType","LotFrontage")
 
-ql.minus.nas <- ql[ , !(names(ql) %in% drop.na.columns)]
-
-qlc <- na.omit(ql.minus.nas)
+all.minus.nas <- all[ , !(names(all) %in% drop.na.columns)]
 
 ```
 
