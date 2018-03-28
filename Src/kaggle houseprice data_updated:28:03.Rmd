@@ -1,15 +1,27 @@
 ---
-title: "Untitled"
-author: "LizhiziCui"
-date: "2/28/2018"
+title: "Kaggle: Predicting Housing Prices"
+author: "Lizhizi Cui (lc3268) and Mario Saraiva (mhs2195)"
+date: "3/28/2018"
 output: 
     html_document:
-    fig_caption: true
-    number_sections: no
+    number_sections: yes
     toc: yes
     toc_float: yes
+runtime: shiny
 ---
 
+<center>
+`Applied Data Science for Social Sciences Project: Preliminary results`
+  
+`Lizhizi Cui (lc3268) and Mario Saraiva (mhs2195)`
+  
+`March 28, 2018`
+</center>
+
+<p>
+  
+  
+</p> 
 
 ```{r}
 knitr::opts_chunk$set(echo = TRUE)
@@ -21,14 +33,14 @@ You could change the working directory. Get the address in the beginning getwd()
 
 
 ```{r}
-# install.packages("rstudioapi") # run this if it's your first time using it to install
-library(rstudioapi) # load it
-# the following line is for getting the path of your current open file
-current_path <- getActiveDocumentContext()$path
-# The next line set the working directory to the relevant one:
-setwd(dirname(current_path ))
-# you can make sure you are in the right directory
-print( getwd() )
+# # install.packages("rstudioapi") # run this if it's your first time using it to install
+# library(rstudioapi) # load it
+# # the following line is for getting the path of your current open file
+# current_path <- getActiveDocumentContext()$path
+# # The next line set the working directory to the relevant one:
+# setwd(dirname(current_path ))
+# # you can make sure you are in the right directory
+# print( getwd() )
 
 ```
 
@@ -221,10 +233,14 @@ cor_numVar <- cor_numVar[CorHigh, CorHigh]
 corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt")
 
 ```
+
 According to the correlation table, variable 'Overall Quality'(Overall material and finish quality), the 'GrLivArea' (‘Above Grade’ Living Area) and 'GarageCars'(Size of garage in car capacity) are the top 3 variables that highly correlated to SalePrice.
+  
 For the rest,it is also clear the multicollinearity is an issue. For example: the correlation between GarageCars and GarageArea is very high (0.89), and both have similar (high) correlations with SalePrice. The other 6 six variables with a correlation higher than 0.5 with SalePrice are: -TotalBsmtSF: Total square feet of basement area -1stFlrSF: First Floor square feet -FullBath: Full bathrooms above grade -TotRmsAbvGrd: Total rooms above grade (does not include bathrooms) -YearBuilt: Original construction date -YearRemodAdd: Remodel date (same as construction date if no remodeling or additions)
 
 ## Overall Quality 
+  
+    
 Overall Quality is observed to have positive correlation with SalePrice. It does not seem to have noticeble outliers apart from a point in level 4. 
 ```{r}
 ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallQual), y=SalePrice))+
@@ -233,6 +249,7 @@ ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallQual), y=SalePrice)
 ```
 
 ## 'GrLivArea' (‘Above Grade’ Living Area)
+  
 GrLivArea is observed to have positive correlation with SalePrice, which make sense since big houses are generally more expensive than smaller. One thing worth noticing is that there are two houses with really large living areas and low SalePrice (potential to be outliers). I checked the data and found out they are houses 524, 1299 and 2550(NA for SalePrice).
 ```{r}
 ggplot(data=all[!is.na(all$SalePrice),], aes(x=GrLivArea, y=SalePrice))+
@@ -245,6 +262,7 @@ all[c(524, 1299, 2550), c('SalePrice', 'GrLivArea', 'OverallQual')]
 ```
 
 ## GarageCars
+  
 The Size of garage shows a positive correlation with SalePrice from level 0-3 but fall at level 4 (non-linear correlation). It make sense because only big houses have large garage, and bigger house usually have higher SalePrice. Also for houses with a garage of capacity of 3 cars(level 3), there are several outliners with much higher SalePrice existing, it must be other factors affecting the outcome price. Something might happen for houses with level 4 garage that needed to explained.
 ```{r}
 
