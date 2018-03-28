@@ -59,7 +59,7 @@ train <- read.csv('/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Scienc
 test <- read.csv('/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Raw/test.csv')
 
 test$SalePrice <- NA
-all <- rbind(train,test)
+all <- rbind(train,test,stringsAsFactors = FALSE)
 ```
 
 
@@ -83,7 +83,7 @@ summary(train$SalePrice)
 
 # Log the SalePrice, the distribution of log(SalePrice) looks like a normal distribution
 train$log_saleprice <- log(train$SalePrice)
-train$log_saleprice
+
 hist(train$log_saleprice, breaks=seq(10, 14, 0.025),prob=TRUE )
 lines(density(train$log_saleprice), col="blue", lwd=2)      
 
@@ -272,23 +272,28 @@ BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/B
        No	No Exposure
        NA	No Basement
        
+
 #MasVnrType (Masonry veneer type) and LotFrontage (Linear feet of street connected to property) should not have NA in priciple.  
 
 ```{r}
-all$PoolQC[is.na(all$PoolQC)] <- 'No Pool'
+all$PoolQC <- addNA(all$PoolQC)
+all$PoolQC[is.na(all$PoolQC)] <- 'None'
 Qualities <- c('None' = 0, 'Po' = 1, 'Fa' = 2, 'TA' = 3, 'Gd' = 4, 'Ex' = 5)
 all$PoolQC<-as.integer(revalue(all$PoolQC, Qualities))
 table(all$PoolQC)
 
-all$MiscFeature[is.na(all$MiscFeature)] <- 'No Feature'
+
+all$MiscFeature[is.na(all$MiscFeature)] <- 'None'
 table(all$MiscFeature)
 
-all$Alley <- as.factor(all$Alley)
+
 all$Alley[is.na(all$Alley)] <- 'No Alley'
+all$Alley <- as.factor(all$Alley)
 table(all$Alley)
 
 all$Fence[is.na(all$Fence)] <- 'No Fence'
 table(all$Fence)
+
 
 all$FireplaceQu[is.na(all$FireplaceQu)] <- 'No Fireplace'
 all$FireplaceQu<-as.integer(revalue(all$FireplaceQu, Qualities))
@@ -352,15 +357,36 @@ all$BsmtFinSF2[is.na(all$BsmtFinSF2)] <- 'No Basement'
 all$BsmtFinSF2<-as.integer(revalue(all$BsmtFinSF2, Qualities))
 table(all$BsmtFinSF2)
 
+drop.na.columns <- c( "MasVnrType","LotFrontage")
+all.minus.nas <- all[ , !(names(all) %in% drop.na.columns)]
 ```
 
+# Correlations again of all numeric variables
+the number of variables with a correlation of at least positive 0.5 with the SalePrice has increased from 8 (see section 4.2.1) to 10 with two extra variables GarageCar/GarageArea. 
 ```{r}
 
-drop.na.columns <- c( "MasVnrType","LotFrontage")
+numericVars <- which(sapply(all.minus.nas, is.numeric))
+factorVars <- which(sapply(all.minus.nas, is.factor)) 
 
-all.minus.nas <- all[ , !(names(all) %in% drop.na.columns)]
+all_numVar <- all.minus.nas[, numericVars]
+cor_numVar <- cor(all_numVar, use="pairwise.complete.obs")
+
+#sort on decreasing correlations with SalePrice
+cor_sorted <- as.matrix(sort(cor_numVar[,'SalePrice'], decreasing = TRUE))
+ #select only high corelations
+CorHigh <- names(which(apply(cor_sorted, 1, function(x) abs(x)>0.5)))
+cor_numVar <- cor_numVar[CorHigh, CorHigh]
+
+corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt", tl.cex = 0.7,cl.cex = .7, number.cex=.7)
+```
+## Finding important variables with Random Forest
+The correlation table above provide a good overview of the most important numeric variables and multicolinerity among those variables. Next, I want to get an overview of the most important variables including the categorical variables.
+```{r}
+#set.seed(123)
+#quick_RF <- randomForest(x=all.minus.nas[1:1461,-1], y=all.minus.nas$SalePrice[1:1461], ntree=100,importance=TRUE)
 
 ```
+
 
 ```{r}
 #Exploring the data through different graphs
