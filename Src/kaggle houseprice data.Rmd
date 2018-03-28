@@ -1,34 +1,42 @@
 ---
-title: "Untitled"
-author: "LizhiziCui"
-date: "2/28/2018"
+title: "Kaggle: Predicting Housing Prices"
+author: "Lizhizi Cui (lc3268) and Mario Saraiva (mhs2195)"
+date: "3/28/2018"
 output: 
     html_document:
-    fig_caption: true
-    number_sections: no
+    number_sections: yes
     toc: yes
     toc_float: yes
+runtime: shiny
 ---
 
+<center>
+`Applied Data Science for Social Sciences Project: Preliminary results`
+  
+`Lizhizi Cui (lc3268) and Mario Saraiva (mhs2195)`
+  
+`March 28, 2018`
+</center>
+
+<p>
+  
+  
+</p>  
 
 ```{r}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-You could change the working directory. Get the address in the beginning getwd(), replace it by your project folder with setwd(). Then, when accessing a file just use read.table("./folder/file.R")
-
-
-
 
 ```{r}
-# install.packages("rstudioapi") # run this if it's your first time using it to install
-library(rstudioapi) # load it
-# the following line is for getting the path of your current open file
-current_path <- getActiveDocumentContext()$path
-# The next line set the working directory to the relevant one:
-setwd(dirname(current_path ))
-# you can make sure you are in the right directory
-print( getwd() )
+# # install.packages("rstudioapi") # run this if it's your first time using it to install
+# library(rstudioapi) # load it
+# # the following line is for getting the path of your current open file
+# current_path <- getActiveDocumentContext()$path
+# # The next line set the working directory to the relevant one:
+# setwd(dirname(current_path ))
+# # you can make sure you are in the right directory
+# print( getwd() )
 
 ```
 
@@ -62,14 +70,97 @@ test <- read.csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/
 
 ##There are 1460 instances of training data and 1460 of test data. Total number of attributes equals 81, of which 36 is quantitative, 43 categorical + Id and SalePrice.##
 
-Quantitative: 1stFlrSF, 2ndFlrSF, 3SsnPorch, BedroomAbvGr, BsmtFinSF1, BsmtFinSF2, BsmtFullBath, BsmtHalfBath, BsmtUnfSF, EnclosedPorch, Fireplaces, FullBath, GarageArea, GarageCars, GarageYrBlt, GrLivArea, HalfBath, KitchenAbvGr, LotArea, LotFrontage, LowQualFinSF, MSSubClass, MasVnrArea, MiscVal, MoSold, OpenPorchSF, OverallCond, OverallQual, PoolArea, ScreenPorch, TotRmsAbvGrd, TotalBsmtSF, WoodDeckSF, YearBuilt, YearRemodAdd, YrSold
+| Variable      | Quantitative? | Class  |
+|---------------|---------------|--------|
+| 1stFlrSF      | Yes           | int    |
+| 2ndFlrSF      | Yes           | int    |
+| 3SsnPorch     | Yes           | int    |
+| BedroomAbvGr  | Yes           | int    |
+| BsmtFinSF1    | Yes           | int    |
+| BsmtFinSF2    | Yes           | int    |
+| BsmtFullBath  | Yes           | int    |
+| BsmtHalfBath  | Yes           | int    |
+| BsmtUnfSF     | Yes           | int    |
+| EnclosedPorch | Yes           | int    |
+| Fireplaces    | Yes           | int    |
+| FullBath      | Yes           | int    |
+| GarageArea    | Yes           | int    |
+| GarageCars    | Yes           | int    |
+| GarageYrBlt   | Yes           | int    |
+| GrLivArea     | Yes           | int    |
+| HalfBath      | Yes           | int    |
+| KitchenAbvGr  | Yes           | int    |
+| LotArea       | Yes           | int    |
+| LotFrontage   | Yes           | int    |
+| LowQualFinSF  | Yes           | int    |
+| MasVnrArea    | Yes           | int    |
+| MiscVal       | Yes           | int    |
+| MoSold        | Yes           | int    |
+| MSSubClass    | Yes           | int    |
+| OpenPorchSF   | Yes           | int    |
+| OverallCond   | Yes           | int    |
+| OverallQual   | Yes           | int    |
+| PoolArea      | Yes           | int    |
+| ScreenPorch   | Yes           | int    |
+| TotalBsmtSF   | Yes           | int    |
+| TotRmsAbvGrd  | Yes           | int    |
+| WoodDeckSF    | Yes           | int    |
+| YearBuilt     | Yes           | int    |
+| YearRemodAdd  | Yes           | int    |
+| YrSold.       | Yes           | int    |
+| Alley         | No            | Factor |
+| BldgType      | No            | Factor |
+| BsmtCond      | No            | Factor |
+| BsmtExposure  | No            | Factor |
+| BsmtFinType1  | No            | Factor |
+| BsmtFinType2  | No            | Factor |
+| BsmtQual      | No            | Factor |
+| CentralAir    | No            | Factor |
+| Condition1    | No            | Factor |
+| Condition2    | No            | Factor |
+| Electrical    | No            | Factor |
+| ExterCond     | No            | Factor |
+| Exterior1st   | No            | Factor |
+| Exterior2nd   | No            | Factor |
+| ExterQual     | No            | Factor |
+| Fence         | No            | Factor |
+| FireplaceQu   | No            | Factor |
+| Foundation    | No            | Factor |
+| Functional    | No            | Factor |
+| GarageCond    | No            | Factor |
+| GarageFinish  | No            | Factor |
+| GarageQual    | No            | Factor |
+| GarageType    | No            | Factor |
+| Heating       | No            | Factor |
+| HeatingQC     | No            | Factor |
+| HouseStyle    | No            | Factor |
+| KitchenQual   | No            | Factor |
+| LandContour   | No            | Factor |
+| LandSlope     | No            | Factor |
+| LotConfig     | No            | Factor |
+| LotShape      | No            | Factor |
+| MasVnrType    | No            | Factor |
+| MiscFeature   | No            | Factor |
+| MSZoning      | No            | Factor |
+| Neighborhood  | No            | Factor |
+| PavedDrive    | No            | Factor |
+| PoolQC        | No            | Factor |
+| RoofMatl      | No            | Factor |
+| RoofStyle     | No            | Factor |
+| SaleCondition | No            | Factor |
+| SaleType      | No            | Factor |
+| Street        | No            | Factor |
+| Utilities.    | No            | Factor |
 
-Qualitative: Alley, BldgType, BsmtCond, BsmtExposure, BsmtFinType1, BsmtFinType2, BsmtQual, CentralAir, Condition1, Condition2, Electrical, ExterCond, ExterQual, Exterior1st, Exterior2nd, Fence, FireplaceQu, Foundation, Functional, GarageCond, GarageFinish, GarageQual, GarageType, Heating, HeatingQC, HouseStyle, KitchenQual, LandContour, LandSlope, LotConfig, LotShape, MSZoning, MasVnrType, MiscFeature, Neighborhood, PavedDrive, PoolQC, RoofMatl, RoofStyle, SaleCondition, SaleType, Street, Utilities,
+`Quantitative`: 1stFlrSF, 2ndFlrSF, 3SsnPorch, BedroomAbvGr, BsmtFinSF1, BsmtFinSF2, BsmtFullBath, BsmtHalfBath, BsmtUnfSF, EnclosedPorch, Fireplaces, FullBath, GarageArea, GarageCars, GarageYrBlt, GrLivArea, HalfBath, KitchenAbvGr, LotArea, LotFrontage, LowQualFinSF, MSSubClass, MasVnrArea, MiscVal, MoSold, OpenPorchSF, OverallCond, OverallQual, PoolArea, ScreenPorch, TotRmsAbvGrd, TotalBsmtSF, WoodDeckSF, YearBuilt, YearRemodAdd, YrSold.
 
-```{R, EDA}
+`Qualitative`: Alley, BldgType, BsmtCond, BsmtExposure, BsmtFinType1, BsmtFinType2, BsmtQual, CentralAir, Condition1, Condition2, Electrical, ExterCond, ExterQual, Exterior1st, Exterior2nd, Fence, FireplaceQu, Foundation, Functional, GarageCond, GarageFinish, GarageQual, GarageType, Heating, HeatingQC, HouseStyle, KitchenQual, LandContour, LandSlope, LotConfig, LotShape, MSZoning, MasVnrType, MiscFeature, Neighborhood, PavedDrive, PoolQC, RoofMatl, RoofStyle, SaleCondition, SaleType, Street, Utilities.
 
-summary(train)
-summary(test)
+```{R, EDA, message=FALSE, warning=FALSE}
+
+#summary(train)
+#summary(test)
+
 hist(train$SalePrice, breaks=seq(30000, 760000, 500),prob=TRUE )
 lines(density(train$SalePrice), col="blue", lwd=2)       
 lines(density(train$SalePrice, adjust=2), lty="dotted")
@@ -81,7 +172,9 @@ lines(density(train$SalePrice), col="blue", lwd=2)
 
 # Log the SalePrice, the distribution of log(SalePrice) looks like a normal distribution
 train$log_saleprice <- log(train$SalePrice)
-train$log_saleprice
+
+#train$log_saleprice
+
 hist(train$log_saleprice, breaks=seq(10, 14, 0.025),prob=TRUE )
 lines(density(train$log_saleprice), col="blue", lwd=2)      
 
@@ -117,7 +210,7 @@ qtc$sale_Index <- as.numeric(qtc$sale_Index)
 
 
 
-```{r Shiny Continuous Variables, eval=FALSE}
+```{r Shiny Continuous Variables, echo=FALSE}
 
 ### Shiny uses only numerical variables.
 shinyApp(
@@ -188,7 +281,7 @@ qlc <- na.omit(ql.minus.nas)
 
 
 ##Distribution of Categorical Variables
-```{r Shiny Categorical Variables, eval=FALSE}
+```{r Shiny Categorical Variables, echo=FALSE}
 ### Shiny uses only numerical variables.
 shinyApp(
   ui = fillPage(
@@ -222,7 +315,7 @@ pca_Cdata <- qtc
 
 pr_out_Cdata <- prcomp(pca_Cdata, scale. = TRUE)
 
-pr_out_Cdata
+#pr_out_Cdata
 
 #Plot
 autoplot(pr_out_Cdata, data = pca_Cdata , colour = "SalePrice", label = TRUE, label.size = 3, shape = FALSE, loadings = TRUE, loadings.colour = 'black',
@@ -277,7 +370,7 @@ plot(cumsum(pve15), xlab = "Principal Components", ylab = "Cumulative Proportion
 ```
 
 
-Detailed look into PCA results:
+##Detailed look into PCA results:
 
 `r pander(pr_out_Cdata15)`
 
