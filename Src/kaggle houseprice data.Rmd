@@ -2,14 +2,41 @@
 title: "Untitled"
 author: "LizhiziCui"
 date: "2/28/2018"
-output: html_document
+output: 
+    html_document:
+    fig_caption: true
+    number_sections: no
+    toc: yes
+    toc_float: yes
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
 
-train <- read.csv('/Users/lizhizicui/Desktop/Dataset/Kaggle House Price/train.csv')
-test <- read.csv('/Users/lizhizicui/Desktop/Dataset/Kaggle House Price/test.csv')
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+You could change the working directory. Get the address in the beginning getwd(), replace it by your project folder with setwd(). Then, when accessing a file just use read.table("./folder/file.R")
+
+
+
+
+```{r}
+# install.packages("rstudioapi") # run this if it's your first time using it to install
+library(rstudioapi) # load it
+# the following line is for getting the path of your current open file
+current_path <- getActiveDocumentContext()$path
+# The next line set the working directory to the relevant one:
+setwd(dirname(current_path ))
+# you can make sure you are in the right directory
+print( getwd() )
+
+```
+
+#Section I
+```{r setup, include=FALSE}
+rm(list=ls())
+
+#install.packages(c("knitr" ,"purrr", "tidyr", "ggplot2", "readr", "dplyr", "corrplot", "RColorBrewer", "shiny", "ggfortify", "pander"))
 
 library(purrr)
 library(tidyr)
@@ -18,6 +45,18 @@ library(readr)
 library(dplyr)
 library(corrplot)
 library(RColorBrewer)
+library(shiny)
+library(ggfortify)
+library(pander)
+
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+#"../data" 
+train <- read.csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Raw/train.csv")
+
+test <- read.csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Raw/test.csv")
+
+#test <- read.csv('/Users/lizhizicui/Desktop/Dataset/Kaggle House Price/test.csv')
+
 ```
 
 
@@ -46,8 +85,7 @@ train$log_saleprice
 hist(train$log_saleprice, breaks=seq(10, 14, 0.025),prob=TRUE )
 lines(density(train$log_saleprice), col="blue", lwd=2)      
 
-
-
+#Selecting numeric only and categorical variables.
 qt <- train %>% keep(is.numeric)
 ql <- train %>% keep(is.factor)
 
@@ -62,15 +100,186 @@ corrplot(cor(qt, use = "complete.obs"), col = col, tl.cex = 0.6, number.cex = .6
 
 ```
 
+#Section II
+
+##Distribution of Continuous Variables
 
 
-```{r cars}
-summary(cars)
+```{r}
+qtc <- na.omit(qt)
+
+qtc$sale_Index <- cut(qtc$SalePrice, 3, labels = c("Minimun.Price.(34.6k.to.275k", "275k.to.515k", "515k.to.7560k"))
+
+table(qtc$sale_Index)
+
+qtc$sale_Index <- as.numeric(qtc$sale_Index)
 ```
 
 
 
-```{r pressure, echo=FALSE}
-plot(pressure)
+```{r Shiny Continuous Variables, eval=FALSE}
+
+### Shiny uses only numerical variables.
+shinyApp(
+  ui = fillPage(
+    fillCol(flex = c(NA, 1),
+            inputPanel(
+              selectInput("xcol", label = "X-axis:", 
+                          names(qtc))
+            ),
+            plotOutput("plot", height = "100%")
+    )
+  ),
+  server = function(input, output) {
+    output$plot = renderPlot( {
+      par(mfrow=c(1,1))
+      plot(density(qtc[,input$xcol]), main="Distribution of Quantitative variables", sub=paste("Skewness:", round(e1071::skewness(qtc[,input$xcol]), 2)))
+      polygon(density(qtc[,input$xcol]), col="light blue") }
+    )},
+  options = list(height = 700)
+)
+
 ```
+
+
+##Explore missing values
+
+```{r, warning=FALSE, message=FALSE}
+na_count <-sapply(train, function(y) sum(length(which(is.na(y)))))
+na_count <- data.frame(na_count)
+
+# maping_nas <- aggr(train, plot = FALSE, col = c('navyblue','red'), numbers = TRUE, sortVars = TRUE, labels = names(train), prop = FALSE)
+# 
+# sumnas <- as.matrix(summary(train))
+# 
+# plot_nas <- aggr(train, plot = TRUE, col =  c('navyblue','lightblue'), numbers = TRUE, sortVars = TRUE, labels = names(train), cex.axis = .5, gap = 1, ylab = c("Histogram of missing data","Pattern"), prop = TRUE, digits = "2")
+```
+
+Most missing: "PoolQC", "MiscFeature", "Alley", "Fence", "FireplaceQu", "LotFrontage"
+
+Variable | Count of Missing
+---------|-----------------
+PoolQC | 1453
+MiscFeature | 1406
+Alley | 1369
+Fence | 1179
+FireplaceQu | 690
+LotFrontage | 259
+GarageType | 81
+GarageYrBlt | 81
+GarageFinish | 81
+GarageQual81
+GarageCond | 81
+BsmtExposur | 38
+BsmtFinType2 | 38
+BsmtQual | 37
+BsmtCond | 37
+BsmtFinType1 | 37
+MasVnrType | 8
+
+
+```{r}
+drop.na.columns <- c("PoolQC", "MiscFeature", "Alley", "Fence", "FireplaceQu", "LotFrontage")
+
+ql.minus.nas <- ql[ , !(names(ql) %in% drop.na.columns)]
+
+qlc <- na.omit(ql.minus.nas)
+```
+
+
+##Distribution of Categorical Variables
+```{r Shiny Categorical Variables, eval=FALSE}
+### Shiny uses only numerical variables.
+shinyApp(
+  ui = fillPage(
+    fillCol(flex = c(NA, 1),
+            inputPanel(
+              selectInput("xcol", label = "X-axis:", 
+                          names(qlc))
+            ),
+            plotOutput("plot", height = "100%")
+    )
+  ),
+  server = function(input, output) {
+    output$plot = renderPlot( {
+      par(mfrow=c(1,1))
+      plot((qlc[,input$xcol]), main="Distribution of Categorical variables", sub=paste("Skewness:", round(e1071::skewness(qlc[,input$xcol]), 2)), col="light green")
+      polygon((qlc[,input$xcol]), col="light blue") }
+    )},
+  options = list(height = 700)
+)
+```
+
+#Principal Component Analysis
+
+
+We do PCA to better understand the main patterns in our data across the whole time period: how the companies differ regarding their financial and ESG score attributes. 
+We find an interesting relationship between the Environmental ESG score and financial performance indicators, and see that 2 principal components already explain 40% of the variance.
+
+```{r PCA all QTC Data}
+#[,-c(40)]
+pca_Cdata <- qtc
+
+pr_out_Cdata <- prcomp(pca_Cdata, scale. = TRUE)
+
+pr_out_Cdata
+
+#Plot
+autoplot(pr_out_Cdata, data = pca_Cdata , colour = "SalePrice", label = TRUE, label.size = 3, shape = FALSE, loadings = TRUE, loadings.colour = 'black',
+         loadings.label = TRUE, loadings.label.size = 3, main = "Principal Component Analysis for Continuous Variables)")
+par(mar = c(5,4,3,3) + .1, las = 1, cex = 0.8)
+
+pr_var <- pr_out_Cdata$sdev ^ 2
+#pr_var
+pve <- pr_var / sum(pr_var)
+#pve
+
+plot(cumsum(pve), xlab = "Principal Components", ylab = "Cumulative Proportion of Variance Explained", ylim = c(0,1),type = 'b')
+
+```
+
+##PCA and Sales Index
+
+The PCA results are interesting since again, the four ESG variables appear in the opposite direction to the financial variables. It seems that in the short term, ESG and financial performance have a negative relationship.
+
+```{r}
+qtc$sale_Index <- cut(qtc$SalePrice, 3, labels = c("Minimun.Price.(34.6k.to.275k", "275k.to.515k", "515k.to.7560k"))
+
+table(qtc$sale_Index)
+
+qtc$sale_Index <- as.numeric(qtc$sale_Index)
+```
+
+```{r PCA Sales Index}
+df15b <- na.omit(qtc)
+# df15 <- df15[-1]
+
+#row.names(df15) <- df15b$Name.1
+pca_Cdata15 <- df15b
+
+pr_out_Cdata15 <- prcomp(pca_Cdata15, scale. = TRUE)
+
+#Plot
+autoplot(pr_out_Cdata15, data = pca_Cdata15 , colour = "sale_Index", label = TRUE, label.size = 3, shape = FALSE, loadings = TRUE, loadings.colour = 'black',
+         loadings.label = TRUE, loadings.label.size = 3, main = "Principal Component Analysis (Sales Index")
+
+par(mar = c(5,4,3,3) + .1, las = 1, cex = 0.8)
+
+pr_var15 <- pr_out_Cdata15$sdev ^ 2
+#pr_var
+pve15 <- pr_var15 / sum(pr_var15)
+#pve
+
+plot(pve15, xlab = "Principal Components", ylab = "Proportion of Variance Explained", ylim = c(0,1),type = 'b')
+
+plot(cumsum(pve15), xlab = "Principal Components", ylab = "Cumulative Proportion of Variance Explained", ylim = c(0,1),type = 'b')
+
+```
+
+
+Detailed look into PCA results:
+
+`r pander(pr_out_Cdata15)`
+
+
 
