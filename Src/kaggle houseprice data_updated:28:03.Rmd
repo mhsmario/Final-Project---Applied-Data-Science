@@ -1,42 +1,34 @@
 ---
-title: "Kaggle: Predicting Housing Prices"
-author: "Lizhizi Cui (lc3268) and Mario Saraiva (mhs2195)"
-date: "3/28/2018"
+title: "Untitled"
+author: "LizhiziCui"
+date: "2/28/2018"
 output: 
     html_document:
-    number_sections: yes
+    fig_caption: true
+    number_sections: no
     toc: yes
     toc_float: yes
-runtime: shiny
 ---
 
-<center>
-`Applied Data Science for Social Sciences Project: Preliminary results`
-  
-`Lizhizi Cui (lc3268) and Mario Saraiva (mhs2195)`
-  
-`March 28, 2018`
-</center>
-
-<p>
-  
-  
-</p>  
 
 ```{r}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
+You could change the working directory. Get the address in the beginning getwd(), replace it by your project folder with setwd(). Then, when accessing a file just use read.table("./folder/file.R")
+
+
+
 
 ```{r}
-# # install.packages("rstudioapi") # run this if it's your first time using it to install
-# library(rstudioapi) # load it
-# # the following line is for getting the path of your current open file
-# current_path <- getActiveDocumentContext()$path
-# # The next line set the working directory to the relevant one:
-# setwd(dirname(current_path ))
-# # you can make sure you are in the right directory
-# print( getwd() )
+# install.packages("rstudioapi") # run this if it's your first time using it to install
+library(rstudioapi) # load it
+# the following line is for getting the path of your current open file
+current_path <- getActiveDocumentContext()$path
+# The next line set the working directory to the relevant one:
+setwd(dirname(current_path ))
+# you can make sure you are in the right directory
+print( getwd() )
 
 ```
 
@@ -45,7 +37,39 @@ knitr::opts_chunk$set(echo = TRUE)
 rm(list=ls())
 
 #install.packages(c("knitr" ,"purrr", "tidyr", "ggplot2", "readr", "dplyr", "corrplot", "RColorBrewer", "shiny", "ggfortify", "pander"))
-
+library(glmnet)
+library(purrr)
+library(tidyr)
+library(readr)
+library(corrplot)
+library(shiny)
+library(dplyr)
+library(ggplot2)
+library(e1071)
+library(glmnet)
+library(mice)
+library(lattice)
+library(VIM)
+library(caret)
+library(stargazer)
+library(gam)
+library(flam)
+#options(java.parameters = "-Xmx5g") #useful when bartmachine breaks because of Java on IOS
+library(bartMachine)
+library(tree)
+library(ISLR)
+library(RColorBrewer)
+library(ggfortify)
+library(scales)
+library(stargazer)
+library(rsconnect)
+library(knitr)
+library(gridExtra)
+library(scales)
+library(Rmisc)
+library(ggrepel)
+library(randomForest)
+library(psych)
 library(purrr)
 library(tidyr)
 library(ggplot2)
@@ -56,17 +80,18 @@ library(RColorBrewer)
 library(shiny)
 library(ggfortify)
 library(pander)
-
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 #"../data" 
 train <- read.csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Raw/train.csv")
 
 test <- read.csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Raw/test.csv")
 
+test$SalePrice <- NA
+all <- rbind(train,test,stringsAsFactors = FALSE)
+
 #test <- read.csv('/Users/lizhizicui/Desktop/Dataset/Kaggle House Price/test.csv')
 
 ```
-
 
 ##There are 1460 instances of training data and 1460 of test data. Total number of attributes equals 81, of which 36 is quantitative, 43 categorical + Id and SalePrice.##
 
@@ -156,49 +181,94 @@ test <- read.csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/
 
 `Qualitative`: Alley, BldgType, BsmtCond, BsmtExposure, BsmtFinType1, BsmtFinType2, BsmtQual, CentralAir, Condition1, Condition2, Electrical, ExterCond, ExterQual, Exterior1st, Exterior2nd, Fence, FireplaceQu, Foundation, Functional, GarageCond, GarageFinish, GarageQual, GarageType, Heating, HeatingQC, HouseStyle, KitchenQual, LandContour, LandSlope, LotConfig, LotShape, MSZoning, MasVnrType, MiscFeature, Neighborhood, PavedDrive, PoolQC, RoofMatl, RoofStyle, SaleCondition, SaleType, Street, Utilities.
 
-```{R, EDA, message=FALSE, warning=FALSE}
+```{R, EDA}
 
-#summary(train)
-#summary(test)
 
+# summary(train)
+# summary(test)
 hist(train$SalePrice, breaks=seq(30000, 760000, 500),prob=TRUE )
 lines(density(train$SalePrice), col="blue", lwd=2)       
 lines(density(train$SalePrice, adjust=2), lty="dotted")
+summary(train$SalePrice)
 
-
-hist(train$SalePrice, breaks=seq(30000, 760000, 2000),prob=TRUE )
-lines(density(train$SalePrice), col="blue", lwd=2)       
-# indicate not a standard normal distribution
+# SalePrice does not have a standard normal distribution, it is right skewed
 
 # Log the SalePrice, the distribution of log(SalePrice) looks like a normal distribution
 train$log_saleprice <- log(train$SalePrice)
 
-#train$log_saleprice
-
 hist(train$log_saleprice, breaks=seq(10, 14, 0.025),prob=TRUE )
-lines(density(train$log_saleprice), col="blue", lwd=2)      
+lines(density(train$log_saleprice), col="blue", lwd=2)        
+```
 
-#Selecting numeric only and categorical variables.
-qt <- train %>% keep(is.numeric)
-ql <- train %>% keep(is.factor)
+## Correlation with SalePrice
+What numeric variables correlated with SalePrice
+```{R, EDA}
+all$Id <- rownames(all)
+numericVars <- which(sapply(all, is.numeric))
+numericVarNames <- names(numericVars)
+length(numericVars)
 
-hist(train$log_saleprice,prob=TRUE )
-lines(density(train$log_saleprice), col="blue", lwd=2) 
 
-boxplot(SalePrice~BldgType,data=train, main="SalePrince vs Type of dwelling", 
-  	xlab="Type of dwelling", ylab="SalePrince")
+all_numVar <- all[, numericVars]
+cor_numVar <- cor(all_numVar, use="pairwise.complete.obs") #correlations of all numeric variables
 
-col <- brewer.pal(4,"RdYlBu") #selecting color palette
-corrplot(cor(qt, use = "complete.obs"), col = col, tl.cex = 0.6, number.cex = .6, title = "Correlation between (numeric) Variables", type = "upper", mar = c(1,0,1,0), diag = FALSE, method = "square")
+#sort on decreasing correlations with SalePrice
+cor_sorted <- as.matrix(sort(cor_numVar[,'SalePrice'], decreasing = TRUE))
+ #select only high corelations
+CorHigh <- names(which(apply(cor_sorted, 1, function(x) abs(x)>0.5)))
+cor_numVar <- cor_numVar[CorHigh, CorHigh]
 
+corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt")
+
+```
+According to the correlation table, variable 'Overall Quality'(Overall material and finish quality), the 'GrLivArea' (‘Above Grade’ Living Area) and 'GarageCars'(Size of garage in car capacity) are the top 3 variables that highly correlated to SalePrice.
+For the rest,it is also clear the multicollinearity is an issue. For example: the correlation between GarageCars and GarageArea is very high (0.89), and both have similar (high) correlations with SalePrice. The other 6 six variables with a correlation higher than 0.5 with SalePrice are: -TotalBsmtSF: Total square feet of basement area -1stFlrSF: First Floor square feet -FullBath: Full bathrooms above grade -TotRmsAbvGrd: Total rooms above grade (does not include bathrooms) -YearBuilt: Original construction date -YearRemodAdd: Remodel date (same as construction date if no remodeling or additions)
+
+## Overall Quality 
+Overall Quality is observed to have positive correlation with SalePrice. It does not seem to have noticeble outliers apart from a point in level 4. 
+```{r}
+ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallQual), y=SalePrice))+
+        geom_boxplot() + labs(x='Overall Quality') +
+        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
+```
+
+## 'GrLivArea' (‘Above Grade’ Living Area)
+GrLivArea is observed to have positive correlation with SalePrice, which make sense since big houses are generally more expensive than smaller. One thing worth noticing is that there are two houses with really large living areas and low SalePrice (potential to be outliers). I checked the data and found out they are houses 524, 1299 and 2550(NA for SalePrice).
+```{r}
+ggplot(data=all[!is.na(all$SalePrice),], aes(x=GrLivArea, y=SalePrice))+
+        geom_point(col='black') + geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1)) +
+        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
+outlier1 <- all%>% filter(GrLivArea > 4500)
+outlier1$Id
+all[c(524, 1299, 2550), c('SalePrice', 'GrLivArea', 'OverallQual')]
+
+```
+
+## GarageCars
+The Size of garage shows a positive correlation with SalePrice from level 0-3 but fall at level 4 (non-linear correlation). It make sense because only big houses have large garage, and bigger house usually have higher SalePrice. Also for houses with a garage of capacity of 3 cars(level 3), there are several outliners with much higher SalePrice existing, it must be other factors affecting the outcome price. Something might happen for houses with level 4 garage that needed to explained.
+```{r}
+
+summary(all$GarageCars)
+ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(GarageCars), y=SalePrice))+
+        geom_boxplot() + labs(x='Size of Garage/car') +
+        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
+
+outlier2 <- all %>% 
+  filter(GarageCars == 3)%>%
+  filter(SalePrice > 700000)
+
+outlier2$Id
+all[c(524, 1299, 692, 1183), c('SalePrice', 'GrLivArea', 'OverallQual','GarageCars')]
 ```
 
 #Section II
 
 ##Distribution of Continuous Variables
+```{R, EDA}
+#Selecting numeric only and categorical variables.
+qt <- train %>% keep(is.numeric)
+ql <- train %>% keep(is.factor)
 
-
-```{r}
 qtc <- na.omit(qt)
 
 qtc$sale_Index <- cut(qtc$SalePrice, 3, labels = c("Minimun.Price.(34.6k.to.275k", "275k.to.515k", "515k.to.7560k"))
@@ -208,9 +278,7 @@ table(qtc$sale_Index)
 qtc$sale_Index <- as.numeric(qtc$sale_Index)
 ```
 
-
-
-```{r Shiny Continuous Variables, echo=FALSE}
+```{r Shiny Continuous Variables, eval=FALSE}
 
 ### Shiny uses only numerical variables.
 shinyApp(
@@ -236,7 +304,7 @@ shinyApp(
 
 
 ##Explore missing values
-
+### Version A (Under construction) 
 ```{r, warning=FALSE, message=FALSE}
 na_count <-sapply(train, function(y) sum(length(which(is.na(y)))))
 na_count <- data.frame(na_count)
@@ -270,7 +338,162 @@ BsmtCond | 37
 BsmtFinType1 | 37
 MasVnrType | 8
 
+PoolQC: Pool quality
+		
+       Ex	Excellent
+       Gd	Good
+       TA	Average/Typical
+       Fa	Fair
+       NA	No Pool
+       
+MiscFeature: Miscellaneous feature not covered in other categories
+		
+       Elev	Elevator
+       Gar2	2nd Garage (if not described in garage section)
+       Othr	Other
+       Shed	Shed (over 100 SF)
+       TenC	Tennis Court
+       NA	None
+       
+Alley: Type of alley access to property
 
+       Grvl	Gravel
+       Pave	Paved
+       NA 	No alley access     
+       
+Fence: Fence quality
+		
+       GdPrv	Good Privacy
+       MnPrv	Minimum Privacy
+       GdWo	Good Wood
+       MnWw	Minimum Wood/Wire
+       NA	No Fence     
+       
+FireplaceQu: Fireplace quality
+
+       Ex	Excellent - Exceptional Masonry Fireplace
+       Gd	Good - Masonry Fireplace in main level
+       TA	Average - Prefabricated Fireplace in main living area or Masonry Fireplace in basement
+       Fa	Fair - Prefabricated Fireplace in basement
+       Po	Poor - Ben Franklin Stove
+       NA	No Fireplace   
+       
+GarageType: Garage location (**smae for GarageYrBlt/GarageFinish/GarageCars/GarageArea/GarageQual/GarageCond)
+		
+       2Types	More than one type of garage
+       Attchd	Attached to home
+       Basment	Basement Garage
+       BuiltIn	Built-In (Garage part of house - typically has room above garage)
+       CarPort	Car Port
+       Detchd	Detached from home
+       NA	No Garage    
+       
+BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/BsmtFinSF1/BsmtFinType2/BsmtFinSF2/BsmtUnfSF/BsmtQual)
+
+       Gd	Good Exposure
+       Av	Average Exposure (split levels or foyers typically score average or above)	
+       Mn	Mimimum Exposure
+       No	No Exposure
+       NA	No Basement
+       
+
+#MasVnrType (Masonry veneer type) and LotFrontage (Linear feet of street connected to property) should not have NA in priciple.  
+
+```{r}
+all$PoolQC <- addNA(all$PoolQC)
+all$PoolQC[is.na(all$PoolQC)] <- 'None'
+Qualities <- c('None' = 0, 'Po' = 1, 'Fa' = 2, 'TA' = 3, 'Gd' = 4, 'Ex' = 5)
+all$PoolQC<-as.integer(revalue(all$PoolQC, Qualities))
+table(all$PoolQC)
+
+
+all$MiscFeature[is.na(all$MiscFeature)] <- 'None'
+table(all$MiscFeature)
+
+
+all$Alley[is.na(all$Alley)] <- 'No Alley'
+all$Alley <- as.factor(all$Alley)
+table(all$Alley)
+
+all$Fence[is.na(all$Fence)] <- 'No Fence'
+table(all$Fence)
+
+
+all$FireplaceQu[is.na(all$FireplaceQu)] <- 'No Fireplace'
+all$FireplaceQu<-as.integer(revalue(all$FireplaceQu, Qualities))
+table(all$FireplaceQu)
+
+#GarageYrBlt/GarageFinish/GarageCars/GarageArea/GarageQual/GarageCond
+all$GarageType[is.na(all$GarageType)] <- 'No Garage'
+all$GarageType <- as.factor(all$GarageType)
+table(all$GarageType)
+
+all$GarageYrBlt[is.na(all$GarageYrBlt)] <- 'No Garage'
+all$GarageYrBlt <- as.factor(all$GarageYrBlt)
+table(all$GarageYrBlt)
+
+all$GarageFinish[is.na(all$GarageFinish)] <- 'No Garage'
+all$GarageFinish <- as.factor(all$GarageFinish)
+table(all$GarageFinish)
+
+all$GarageCars[is.na(all$GarageCars)] <- 'No Garage'
+all$GarageCars <- as.factor(all$GarageCars)
+table(all$GarageCars)
+
+all$GarageArea[is.na(all$GarageArea)] <- 'No Garage'
+all$GarageArea <- as.factor(all$GarageArea)
+table(all$GarageArea)
+
+all$GarageQual[is.na(all$GarageQual)] <- 'No Garage'
+all$GarageQual <- as.factor(all$GarageQual)
+table(all$GarageQual)
+
+all$GarageCond[is.na(all$GarageCond)] <- 'No Garage'
+all$GarageCond <- as.factor(all$GarageCond)
+table(all$GarageCond)
+
+#BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/BsmtFinSF1/BsmtFinType2/BsmtFinSF2/BsmtUnfSF/BsmtQual)
+all$BsmtQual[is.na(all$BsmtQual)] <- 'No Basement'
+all$BsmtQual<-as.integer(revalue(all$BsmtQual, Qualities))
+table(all$BsmtQual)
+
+all$BsmtExposure[is.na(all$BsmtExposure)] <- 'No Basement'
+all$BsmtExposure<-as.integer(revalue(all$BsmtExposure, Qualities))
+table(all$BsmtExposure)
+
+all$BsmtFinType1[is.na(all$BsmtFinType1)] <- 'No Basement'
+all$BsmtFinType1<-as.integer(revalue(all$BsmtFinType1, Qualities))
+table(all$BsmtFinType1)
+
+all$BsmtFinType2[is.na(all$BsmtFinType2)] <- 'No Basement'
+all$BsmtFinType2<-as.integer(revalue(all$BsmtFinType2, Qualities))
+table(all$BsmtFinType2)
+
+all$BsmtUnfSF[is.na(all$BsmtUnfSF)] <- 'No Basement'
+all$BsmtUnfSF<-as.integer(revalue(all$BsmtUnfSF, Qualities))
+table(all$BsmtUnfSF)
+
+all$BsmtFinSF1[is.na(all$BsmtFinSF1)] <- 'No Basement'
+all$BsmtFinSF1<-as.integer(revalue(all$BsmtFinSF1, Qualities))
+table(all$BsmtFinSF1)
+
+all$BsmtFinSF2[is.na(all$BsmtFinSF2)] <- 'No Basement'
+all$BsmtFinSF2<-as.integer(revalue(all$BsmtFinSF2, Qualities))
+table(all$BsmtFinSF2)
+
+drop.na.columns <- c( "MasVnrType","LotFrontage")
+all.minus.nas <- all[ , !(names(all) %in% drop.na.columns)]
+```
+
+## Finding important variables with Random Forest
+The correlation table above provide a good overview of the most important numeric variables and multicolinerity among those variables. Next, I want to get an overview of the most important variables including the categorical variables.
+```{r}
+#set.seed(123)
+#quick_RF <- randomForest(x=all.minus.nas[1:1461,-1], y=all.minus.nas$SalePrice[1:1461], ntree=100,importance=TRUE)
+
+```
+
+# Version B (remove all NA by deleting columns)
 ```{r}
 drop.na.columns <- c("PoolQC", "MiscFeature", "Alley", "Fence", "FireplaceQu", "LotFrontage")
 
@@ -281,7 +504,7 @@ qlc <- na.omit(ql.minus.nas)
 
 
 ##Distribution of Categorical Variables
-```{r Shiny Categorical Variables, echo=FALSE}
+```{r Shiny Categorical Variables, eval=FALSE}
 ### Shiny uses only numerical variables.
 shinyApp(
   ui = fillPage(
@@ -369,8 +592,7 @@ plot(cumsum(pve15), xlab = "Principal Components", ylab = "Cumulative Proportion
 
 ```
 
-
-##Detailed look into PCA results:
+Detailed look into PCA results:
 
 `r pander(pr_out_Cdata15)`
 
