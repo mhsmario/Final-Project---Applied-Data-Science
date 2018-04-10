@@ -46,9 +46,6 @@ You could change the working directory. Get the address in the beginning getwd()
 
 #Section I
 ```{r setup, include=FALSE}
-rm(list=ls())
-
-#install.packages(c("knitr" ,"purrr", "tidyr", "ggplot2", "readr", "dplyr", "corrplot", "RColorBrewer", "shiny", "ggfortify", "pander"))
 library(glmnet)
 library(purrr)
 library(tidyr)
@@ -94,9 +91,13 @@ library(ggfortify)
 library(pander)
 # setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 #"../data" 
-train <- read.csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Raw/train.csv")
 
-test <- read.csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Raw/test.csv")
+#train <- read.csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Raw/train.csv")
+
+#test <- read.csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Raw/test.csv")
+
+train <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Raw//train.csv")
+test <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Raw/test.csv")
 
 test$SalePrice <- NA
 all <- rbind(train,test,stringsAsFactors = FALSE)
@@ -195,9 +196,6 @@ all <- rbind(train,test,stringsAsFactors = FALSE)
 
 ```{R, EDA}
 
-
-# summary(train)
-# summary(test)
 hist(train$SalePrice, breaks=seq(30000, 760000, 500),prob=TRUE )
 lines(density(train$SalePrice), col="blue", lwd=2)       
 lines(density(train$SalePrice, adjust=2), lty="dotted")
@@ -282,7 +280,7 @@ all[c(524, 1299, 692, 1183), c('SalePrice', 'GrLivArea', 'OverallQual','GarageCa
 #Section II
 
 ##Distribution of Continuous Variables
-```{R, EDA}
+```{R, Shiny}
 #Selecting numeric only and categorical variables.
 qt <- train %>% keep(is.numeric)
 ql <- train %>% keep(is.factor)
@@ -324,14 +322,8 @@ shinyApp(
 ##Explore missing values
 ### Version A (Under construction) 
 ```{r, warning=FALSE, message=FALSE}
-na_count <-sapply(train, function(y) sum(length(which(is.na(y)))))
+na_count <-sapply(all, function(y) sum(length(which(is.na(y)))))
 na_count <- data.frame(na_count)
-
-# maping_nas <- aggr(train, plot = FALSE, col = c('navyblue','red'), numbers = TRUE, sortVars = TRUE, labels = names(train), prop = FALSE)
-# 
-# sumnas <- as.matrix(summary(train))
-# 
-# plot_nas <- aggr(train, plot = TRUE, col =  c('navyblue','lightblue'), numbers = TRUE, sortVars = TRUE, labels = names(train), cex.axis = .5, gap = 1, ylab = c("Histogram of missing data","Pattern"), prop = TRUE, digits = "2")
 ```
 
 Most missing: "PoolQC", "MiscFeature", "Alley", "Fence", "FireplaceQu", "LotFrontage"
@@ -417,58 +409,93 @@ BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/B
 
 #MasVnrType (Masonry veneer type) and LotFrontage (Linear feet of street connected to property) should not have NA in priciple.  
 
-```{r}
-all$PoolQC <- addNA(all$PoolQC)
-all$PoolQC[is.na(all$PoolQC)] <- 'None'
+```{r, PoolQC}
+all_test <- all
+levels(all_test$PoolQC)
+
+addLevel <- function(x, newlevel=NULL) {
+  if(is.factor(x)) {
+    if (is.na(match(newlevel, levels(x))))
+      return(factor(x, levels=c(levels(x), newlevel)))
+  }
+  return(x)
+}
+all_test$PoolQC <- addLevel(all_test$PoolQC, "None")
+all_test$PoolQC <- addLevel(all_test$PoolQC, "Po")
+all_test$PoolQC <- addLevel(all_test$PoolQC, "TA")
+all_test$PoolQC <- ifelse(is.na(all$PoolQC), "None", paste(all$PoolQC))
+
 Qualities <- c('None' = 0, 'Po' = 1, 'Fa' = 2, 'TA' = 3, 'Gd' = 4, 'Ex' = 5)
-all$PoolQC<-as.integer(revalue(all$PoolQC, Qualities))
-table(all$PoolQC)
+all_test$PoolQC<- revalue(all_test$PoolQC, Qualities)
+table(all_test$PoolQC)
+```
 
+```{r, MiscFeature}
+all_test$MiscFeature <- addLevel(all_test$MiscFeature, "None")
+all_test$MiscFeature <- ifelse(is.na(all$MiscFeature), "None", paste(all$MiscFeature))
+all_test$MiscFeature <- as.factor(all_test$MiscFeature)
+table(all_test$MiscFeature)
 
-all$MiscFeature[is.na(all$MiscFeature)] <- 'None'
-table(all$MiscFeature)
+# Neighborhood
+train%>%
+  group_by(train$Neighborhood)%>%
+  mutate(train$avg_price <- mean(train$SalePrice[,train$Neighborhood]))
 
+df <- data.frame(tapply(train$SalePrice, train$Neighborhood, mean))
+library(data.table)
+setDT(df, keep.rownames = TRUE)[]
 
-all$Alley[is.na(all$Alley)] <- 'No Alley'
-all$Alley <- as.factor(all$Alley)
-table(all$Alley)
+ggplot(df, aes(x = df$rn, y= df$tapply.train.SalePrice..train.Neighborhood..mean.)) + geom_col(aes(fill = df$rn))
+                                                                                            
 
-all$Fence[is.na(all$Fence)] <- 'No Fence'
-table(all$Fence)
+all_test$Alley <- addLevel(all_test$Alley, "None")
+all_test$Alley <- ifelse(is.na(all$Alley), "None", paste(all$Alley))
+all_test$Alley <- as.factor(all_test$Alley)
+table(all_test$Alley)
 
+all_test$Fence <- addLevel(all_test$Fence, "None")
+all_test$Fence <- ifelse(is.na(all$Fence), "None", paste(all$Fence))
+all_test$Fence <- as.factor(all_test$Fence)
+table(all_test$Fence)
 
-all$FireplaceQu[is.na(all$FireplaceQu)] <- 'No Fireplace'
-all$FireplaceQu<-as.integer(revalue(all$FireplaceQu, Qualities))
-table(all$FireplaceQu)
+all_test$FireplaceQu <- addLevel(all_test$FireplaceQu, "None")
+all_test$FireplaceQu <- ifelse(!is.na(all$FireplaceQu), paste(all$FireplaceQu), "None")
+all_test$FireplaceQu <- as.factor(all_test$FireplaceQu)
+
 
 #GarageYrBlt/GarageFinish/GarageCars/GarageArea/GarageQual/GarageCond
-all$GarageType[is.na(all$GarageType)] <- 'No Garage'
-all$GarageType <- as.factor(all$GarageType)
-table(all$GarageType)
+all_test$GarageType <- addLevel(all_test$GarageType, "None")
+all_test$GarageType <- ifelse(is.na(all$GarageType), "None", paste(all$GarageType))
+all_test$GarageType <- as.factor(all_test$GarageType)
+table(all_test$GarageType)
 
-all$GarageYrBlt[is.na(all$GarageYrBlt)] <- 'No Garage'
-all$GarageYrBlt <- as.factor(all$GarageYrBlt)
+
+all_test$GarageYrBlt[is.na(all_test$GarageYrBlt)] <- 'No Garage'
+all_test$GarageYrBlt <- as.factor(all_test$GarageYrBlt)
 table(all$GarageYrBlt)
 
-all$GarageFinish[is.na(all$GarageFinish)] <- 'No Garage'
-all$GarageFinish <- as.factor(all$GarageFinish)
-table(all$GarageFinish)
+all_test$GarageFinish <- addLevel(all_test$GarageFinish, "None")
+all_test$GarageFinish <- ifelse(is.na(all$GarageFinish), "None", paste(all$GarageFinish))
+all_test$GarageFinish <- as.factor(all_test$GarageFinish)
+table(all_test$GarageFinish)
 
-all$GarageCars[is.na(all$GarageCars)] <- 'No Garage'
-all$GarageCars <- as.factor(all$GarageCars)
-table(all$GarageCars)
+all_test$GarageCars[is.na(all_test$GarageCars)] <- 'No Garage'
+all_test$GarageCars <- as.factor(all_test$GarageCars)
+table(all_test$GarageCars)
 
-all$GarageArea[is.na(all$GarageArea)] <- 'No Garage'
-all$GarageArea <- as.factor(all$GarageArea)
-table(all$GarageArea)
+all_test$GarageArea[is.na(all_test$GarageArea)] <- 'No Garage'
+all_test$GarageArea <- as.factor(all_test$GarageArea)
+table(all_test$GarageArea)
 
-all$GarageQual[is.na(all$GarageQual)] <- 'No Garage'
-all$GarageQual <- as.factor(all$GarageQual)
-table(all$GarageQual)
+all_test$GarageQual <- addLevel(all_test$GarageQual, "None")
+all_test$GarageQual <- ifelse(is.na(all$GarageQual), "None", paste(all$GarageQual))
+all_test$GarageQual <- as.factor(all_test$GarageQual)
+table(all_test$GarageQual)
 
-all$GarageCond[is.na(all$GarageCond)] <- 'No Garage'
-all$GarageCond <- as.factor(all$GarageCond)
-table(all$GarageCond)
+all_test$GarageCond <- addLevel(all_test$GarageCond, "None")
+all_test$GarageCond <- ifelse(is.na(all$GarageCond), "None", paste(all$GarageCond))
+all_test$GarageCond <- as.factor(all_test$GarageCond)
+table(all_test$GarageCond)
 
 #BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/BsmtFinSF1/BsmtFinType2/BsmtFinSF2/BsmtUnfSF/BsmtQual)
 all$BsmtQual[is.na(all$BsmtQual)] <- 'No Basement'
@@ -610,6 +637,32 @@ plot(cumsum(pve15), xlab = "Principal Components", ylab = "Cumulative Proportion
 
 ```
 
+```{r random foreast}
+set.seed(2018)
+quick_RF <- randomForest(x=all[1:1460,-79], y=all$SalePrice[1:1460], ntree=100,importance=TRUE)
+imp_RF <- importance(quick_RF)
+imp_DF <- data.frame(Variables = row.names(imp_RF), MSE = imp_RF[,1])
+imp_DF <- imp_DF[order(imp_DF$MSE, decreasing = TRUE),]
+
+ggplot(imp_DF[1:20,], aes(x=reorder(Variables, MSE), y=MSE, fill=MSE)) + geom_bar(stat = 'identity') + labs(x = 'Variables', y= '% increase MSE if variable is randomly permuted') + coord_flip() + theme(legend.position="none")
+
+```
+
+```{r lasso}
+set.seed(1234)
+my_control <-trainControl(method="cv", number=5)
+lassoGrid <- expand.grid(alpha = 1, lambda = seq(0.001,0.1,by = 0.0005))
+
+lasso_mod <- train(x=train1, y=all$SalePrice[!is.na(all$SalePrice)], method='glmnet', trControl= my_control, tuneGrid=lassoGrid) 
+lasso_mod$bestTune
+
+LassoPred <- predict(lasso_mod, test1)
+predictions_lasso <- exp(LassoPred) #need to reverse the log to the real values
+head(predictions_lasso)
+
+sub_lasso <- data.frame(Id = test_labels, SalePrice = predictions_lasso)
+
+```
 Detailed look into PCA results:
 
 `r pander(pr_out_Cdata15)`
