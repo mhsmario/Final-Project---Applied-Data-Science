@@ -100,8 +100,8 @@ train <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Scienc
 test <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Raw/test.csv")
 
 test$SalePrice <- NA
-all <- rbind(train,test,stringsAsFactors = FALSE)
-
+all_total <- rbind(train,test,stringsAsFactors = FALSE)
+all <- all_total
 #test <- read.csv('/Users/lizhizicui/Desktop/Dataset/Kaggle House Price/test.csv')
 
 ```
@@ -498,36 +498,50 @@ all_test$GarageCond <- as.factor(all_test$GarageCond)
 table(all_test$GarageCond)
 
 #BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/BsmtFinSF1/BsmtFinType2/BsmtFinSF2/BsmtUnfSF/BsmtQual)
-all$BsmtQual[is.na(all$BsmtQual)] <- 'No Basement'
-all$BsmtQual<-as.integer(revalue(all$BsmtQual, Qualities))
-table(all$BsmtQual)
+all_test$BsmtQual <- addLevel(all_test$BsmtQual, "None")
+all_test$BsmtQual <- ifelse(is.na(all$BsmtQual), "None", paste(all$BsmtQual))
+all_test$BsmtQual <- as.factor(all_test$BsmtQual)
+table(all_test$BsmtQual)
 
-all$BsmtExposure[is.na(all$BsmtExposure)] <- 'No Basement'
-all$BsmtExposure<-as.integer(revalue(all$BsmtExposure, Qualities))
-table(all$BsmtExposure)
+all_test$BsmtExposure <- addLevel(all_test$BsmtExposure, "None")
+all_test$BsmtExposure <- ifelse(is.na(all$BsmtExposure), "None", paste(all$BsmtExposure))
+all_test$BsmtExposure <- as.factor(all_test$BsmtExposure)
+table(all_test$BsmtExposure)
 
-all$BsmtFinType1[is.na(all$BsmtFinType1)] <- 'No Basement'
-all$BsmtFinType1<-as.integer(revalue(all$BsmtFinType1, Qualities))
-table(all$BsmtFinType1)
+all_test$BsmtFinType1 <- addLevel(all_test$BsmtFinType1, "None")
+all_test$BsmtFinType1 <- ifelse(is.na(all$BsmtFinType1), "None", paste(all$BsmtFinType1))
+all_test$BsmtFinType1 <- as.factor(all_test$BsmtFinType1)
+table(all_test$BsmtFinType1)
 
-all$BsmtFinType2[is.na(all$BsmtFinType2)] <- 'No Basement'
-all$BsmtFinType2<-as.integer(revalue(all$BsmtFinType2, Qualities))
-table(all$BsmtFinType2)
+all_test$BsmtFinType2 <- addLevel(all_test$BsmtFinType2, "None")
+all_test$BsmtFinType2 <- ifelse(is.na(all$BsmtFinType2), "None", paste(all$BsmtFinType2))
+all_test$BsmtFinType2 <- as.factor(all_test$BsmtFinType2)
+table(all_test$BsmtFinType2)
 
-all$BsmtUnfSF[is.na(all$BsmtUnfSF)] <- 'No Basement'
-all$BsmtUnfSF<-as.integer(revalue(all$BsmtUnfSF, Qualities))
-table(all$BsmtUnfSF)
+all_test$BsmtFinSF1[is.na(all_test$BsmtFinSF1)] <-0
+all_test$BsmtFinSF2[is.na(all_test$BsmtFinSF2)] <-0
+all_test$BsmtUnfSF[is.na(all_test$BsmtUnfSF)] <-0
 
-all$BsmtFinSF1[is.na(all$BsmtFinSF1)] <- 'No Basement'
-all$BsmtFinSF1<-as.integer(revalue(all$BsmtFinSF1, Qualities))
-table(all$BsmtFinSF1)
-
-all$BsmtFinSF2[is.na(all$BsmtFinSF2)] <- 'No Basement'
-all$BsmtFinSF2<-as.integer(revalue(all$BsmtFinSF2, Qualities))
-table(all$BsmtFinSF2)
 
 drop.na.columns <- c( "MasVnrType","LotFrontage")
-all.minus.nas <- all[ , !(names(all) %in% drop.na.columns)]
+all_test<- all_test[ , !(names(all) %in% drop.na.columns)]
+```
+```{r factorize}
+all <- all_test
+all$Foundation <- as.factor(all$Foundation)
+table(all$Foundation)
+all$Heating <- as.factor(all$Heating)
+all$RoofStyle <- as.factor(all$RoofStyle)
+all$RoofMatl <- as.factor(all$RoofMatl)
+all$LandContour <- as.factor(all$LandContour)
+all$BldgType <- as.factor(all$BldgType)
+all$HouseStyle <- as.factor(all$HouseStyle)
+all$Condition1 <- as.factor(all$Condition1)
+all$Condition2 <- as.factor(all$Condition2)
+
+all$MoSold <- as.factor(all$MoSold)
+all$MSSubClass <- as.factor(all$MSSubClass)
+
 ```
 
 ## Finding important variables with Random Forest
