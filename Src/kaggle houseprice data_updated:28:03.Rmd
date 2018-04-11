@@ -27,22 +27,8 @@ runtime: shiny
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-You could change the working directory. Get the address in the beginning getwd(), replace it by your project folder with setwd(). Then, when accessing a file just use read.table("./folder/file.R")
+We want to accurately predict Sales Price based on other variables in the dataset and we will use our findings from inferential section to create a more robust model. 
 
-
-
-
-```{r}
-# # install.packages("rstudioapi") # run this if it's your first time using it to install
-# library(rstudioapi) # load it
-# # the following line is for getting the path of your current open file
-# current_path <- getActiveDocumentContext()$path
-# # The next line set the working directory to the relevant one:
-# setwd(dirname(current_path ))
-# # you can make sure you are in the right directory
-# print( getwd() )
-
-```
 
 #Section I
 ```{r setup, include=FALSE}
@@ -63,7 +49,6 @@ library(caret)
 library(stargazer)
 library(gam)
 library(flam)
-#options(java.parameters = "-Xmx5g") #useful when bartmachine breaks because of Java on IOS
 library(bartMachine)
 library(tree)
 library(ISLR)
@@ -89,20 +74,10 @@ library(RColorBrewer)
 library(shiny)
 library(ggfortify)
 library(pander)
-# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
-#"../data" 
 
-#train <- read.csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Raw/train.csv")
+all <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Raw//train.csv")
 
-#test <- read.csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Raw/test.csv")
 
-train <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Raw//train.csv")
-test <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Raw/test.csv")
-
-test$SalePrice <- NA
-all_total <- rbind(train,test,stringsAsFactors = FALSE)
-all <- all_total
-#test <- read.csv('/Users/lizhizicui/Desktop/Dataset/Kaggle House Price/test.csv')
 
 ```
 
@@ -196,18 +171,18 @@ all <- all_total
 
 ```{R, EDA}
 
-hist(train$SalePrice, breaks=seq(30000, 760000, 500),prob=TRUE )
-lines(density(train$SalePrice), col="blue", lwd=2)       
-lines(density(train$SalePrice, adjust=2), lty="dotted")
-summary(train$SalePrice)
+hist(all$SalePrice, breaks=seq(30000, 760000, 500),prob=TRUE )
+lines(density(all$SalePrice), col="blue", lwd=2)       
+lines(density(all$SalePrice, adjust=2), lty="dotted")
+summary(all$SalePrice)
 
 # SalePrice does not have a standard normal distribution, it is right skewed
 
 # Log the SalePrice, the distribution of log(SalePrice) looks like a normal distribution
-train$log_saleprice <- log(train$SalePrice)
+log_saleprice <- log(all$SalePrice)
 
-hist(train$log_saleprice, breaks=seq(10, 14, 0.025),prob=TRUE )
-lines(density(train$log_saleprice), col="blue", lwd=2)        
+hist(log_saleprice, breaks=seq(10, 14, 0.025),prob=TRUE )
+lines(density(log_saleprice), col="blue", lwd=2)        
 ```
 
 ## Correlation with SalePrice
@@ -276,48 +251,6 @@ outlier2 <- all %>%
 outlier2$Id
 all[c(524, 1299, 692, 1183), c('SalePrice', 'GrLivArea', 'OverallQual','GarageCars')]
 ```
-
-#Section II
-
-##Distribution of Continuous Variables
-```{R, Shiny}
-#Selecting numeric only and categorical variables.
-qt <- train %>% keep(is.numeric)
-ql <- train %>% keep(is.factor)
-
-qtc <- na.omit(qt)
-
-qtc$sale_Index <- cut(qtc$SalePrice, 3, labels = c("Minimun.Price.(34.6k.to.275k", "275k.to.515k", "515k.to.7560k"))
-
-table(qtc$sale_Index)
-
-qtc$sale_Index <- as.numeric(qtc$sale_Index)
-```
-
-```{r Shiny Continuous Variables, eval=FALSE}
-
-### Shiny uses only numerical variables.
-shinyApp(
-  ui = fillPage(
-    fillCol(flex = c(NA, 1),
-            inputPanel(
-              selectInput("xcol", label = "X-axis:", 
-                          names(qtc))
-            ),
-            plotOutput("plot", height = "100%")
-    )
-  ),
-  server = function(input, output) {
-    output$plot = renderPlot( {
-      par(mfrow=c(1,1))
-      plot(density(qtc[,input$xcol]), main="Distribution of Quantitative variables", sub=paste("Skewness:", round(e1071::skewness(qtc[,input$xcol]), 2)))
-      polygon(density(qtc[,input$xcol]), col="light blue") }
-    )},
-  options = list(height = 700)
-)
-
-```
-
 
 ##Explore missing values
 ### Version A (Under construction) 
@@ -432,50 +365,37 @@ table(all_test$PoolQC)
 
 ```{r, MiscFeature}
 all_test$MiscFeature <- addLevel(all_test$MiscFeature, "None")
-all_test$MiscFeature <- ifelse(is.na(all$MiscFeature), "None", paste(all$MiscFeature))
+all_test$MiscFeature <- ifelse(is.na(all_test$MiscFeature), "None", paste(all_test$MiscFeature))
 all_test$MiscFeature <- as.factor(all_test$MiscFeature)
 table(all_test$MiscFeature)
-
-# Neighborhood
-train%>%
-  group_by(train$Neighborhood)%>%
-  mutate(train$avg_price <- mean(train$SalePrice[,train$Neighborhood]))
-
-df <- data.frame(tapply(train$SalePrice, train$Neighborhood, mean))
-library(data.table)
-setDT(df, keep.rownames = TRUE)[]
-
-ggplot(df, aes(x = df$rn, y= df$tapply.train.SalePrice..train.Neighborhood..mean.)) + geom_col(aes(fill = df$rn))
                                                                                             
-
 all_test$Alley <- addLevel(all_test$Alley, "None")
-all_test$Alley <- ifelse(is.na(all$Alley), "None", paste(all$Alley))
+all_test$Alley <- ifelse(is.na(all_test$Alley), "None", paste(all$Alley))
 all_test$Alley <- as.factor(all_test$Alley)
 table(all_test$Alley)
 
 all_test$Fence <- addLevel(all_test$Fence, "None")
-all_test$Fence <- ifelse(is.na(all$Fence), "None", paste(all$Fence))
+all_test$Fence <- ifelse(is.na(all$Fence), "None", paste(all_test$Fence))
 all_test$Fence <- as.factor(all_test$Fence)
 table(all_test$Fence)
 
 all_test$FireplaceQu <- addLevel(all_test$FireplaceQu, "None")
-all_test$FireplaceQu <- ifelse(!is.na(all$FireplaceQu), paste(all$FireplaceQu), "None")
+all_test$FireplaceQu <- ifelse(!is.na(all_test$FireplaceQu), paste(all_test$FireplaceQu), "None")
 all_test$FireplaceQu <- as.factor(all_test$FireplaceQu)
 
 
 #GarageYrBlt/GarageFinish/GarageCars/GarageArea/GarageQual/GarageCond
 all_test$GarageType <- addLevel(all_test$GarageType, "None")
-all_test$GarageType <- ifelse(is.na(all$GarageType), "None", paste(all$GarageType))
+all_test$GarageType <- ifelse(is.na(all_test$GarageType), "None", paste(all_test$GarageType))
 all_test$GarageType <- as.factor(all_test$GarageType)
 table(all_test$GarageType)
 
 
 all_test$GarageYrBlt[is.na(all_test$GarageYrBlt)] <- 'No Garage'
-all_test$GarageYrBlt <- as.factor(all_test$GarageYrBlt)
-table(all$GarageYrBlt)
+all$GarageYrBlt <- as.numeric(all$GarageYrBlt)
 
 all_test$GarageFinish <- addLevel(all_test$GarageFinish, "None")
-all_test$GarageFinish <- ifelse(is.na(all$GarageFinish), "None", paste(all$GarageFinish))
+all_test$GarageFinish <- ifelse(is.na(all_test$GarageFinish), "None", paste(all_test$GarageFinish))
 all_test$GarageFinish <- as.factor(all_test$GarageFinish)
 table(all_test$GarageFinish)
 
@@ -484,47 +404,55 @@ all_test$GarageCars <- as.factor(all_test$GarageCars)
 table(all_test$GarageCars)
 
 all_test$GarageArea[is.na(all_test$GarageArea)] <- 'No Garage'
-all_test$GarageArea <- as.factor(all_test$GarageArea)
 table(all_test$GarageArea)
 
 all_test$GarageQual <- addLevel(all_test$GarageQual, "None")
-all_test$GarageQual <- ifelse(is.na(all$GarageQual), "None", paste(all$GarageQual))
+all_test$GarageQual <- ifelse(is.na(all_test$GarageQual), "None", paste(all_test$GarageQual))
 all_test$GarageQual <- as.factor(all_test$GarageQual)
 table(all_test$GarageQual)
 
 all_test$GarageCond <- addLevel(all_test$GarageCond, "None")
-all_test$GarageCond <- ifelse(is.na(all$GarageCond), "None", paste(all$GarageCond))
+all_test$GarageCond <- ifelse(is.na(all_test$GarageCond), "None", paste(all_test$GarageCond))
 all_test$GarageCond <- as.factor(all_test$GarageCond)
 table(all_test$GarageCond)
 
 #BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/BsmtFinSF1/BsmtFinType2/BsmtFinSF2/BsmtUnfSF/BsmtQual)
 all_test$BsmtQual <- addLevel(all_test$BsmtQual, "None")
-all_test$BsmtQual <- ifelse(is.na(all$BsmtQual), "None", paste(all$BsmtQual))
+all_test$BsmtQual <- ifelse(is.na(all_test$BsmtQual), "None", paste(all_test$BsmtQual))
 all_test$BsmtQual <- as.factor(all_test$BsmtQual)
 table(all_test$BsmtQual)
 
 all_test$BsmtExposure <- addLevel(all_test$BsmtExposure, "None")
-all_test$BsmtExposure <- ifelse(is.na(all$BsmtExposure), "None", paste(all$BsmtExposure))
+all_test$BsmtExposure <- ifelse(is.na(all_test$BsmtExposure), "None", paste(all_test$BsmtExposure))
 all_test$BsmtExposure <- as.factor(all_test$BsmtExposure)
 table(all_test$BsmtExposure)
 
 all_test$BsmtFinType1 <- addLevel(all_test$BsmtFinType1, "None")
-all_test$BsmtFinType1 <- ifelse(is.na(all$BsmtFinType1), "None", paste(all$BsmtFinType1))
+all_test$BsmtFinType1 <- ifelse(is.na(all_test$BsmtFinType1), "None", paste(all_test$BsmtFinType1))
 all_test$BsmtFinType1 <- as.factor(all_test$BsmtFinType1)
-table(all_test$BsmtFinType1)
+str(all_test$BsmtFinType1)
+
+all_test$BsmtCond <- addLevel(all_test$BsmtCond, "None")
+all_test$BsmtCond <- ifelse(is.na(all_test$BsmtCond), "None", paste(all_test$BsmtCond))
+all_test$BsmtCond <- as.factor(all_test$BsmtCond)
+table(all_test$BsmtCond)
 
 all_test$BsmtFinType2 <- addLevel(all_test$BsmtFinType2, "None")
-all_test$BsmtFinType2 <- ifelse(is.na(all$BsmtFinType2), "None", paste(all$BsmtFinType2))
+all_test$BsmtFinType2 <- ifelse(is.na(all_test$BsmtFinType2), "None", paste(all_test$BsmtFinType2))
 all_test$BsmtFinType2 <- as.factor(all_test$BsmtFinType2)
 table(all_test$BsmtFinType2)
 
 all_test$BsmtFinSF1[is.na(all_test$BsmtFinSF1)] <-0
 all_test$BsmtFinSF2[is.na(all_test$BsmtFinSF2)] <-0
 all_test$BsmtUnfSF[is.na(all_test$BsmtUnfSF)] <-0
-
+all_test$LotFrontage[is.na(all_test$LotFrontage)] <-0
+table(all_test$LotFrontage)
 
 drop.na.columns <- c( "MasVnrType","LotFrontage")
-all_test<- all_test[ , !(names(all) %in% drop.na.columns)]
+all_test<- all_test[ , !(names(all_test) %in% drop.na.columns)]
+
+all_test <- na.omit(all_test)
+
 ```
 ```{r factorize}
 all <- all_test
@@ -538,51 +466,122 @@ all$BldgType <- as.factor(all$BldgType)
 all$HouseStyle <- as.factor(all$HouseStyle)
 all$Condition1 <- as.factor(all$Condition1)
 all$Condition2 <- as.factor(all$Condition2)
+all$GarageArea <- as.numeric(all$GarageArea)
 
 all$MoSold <- as.factor(all$MoSold)
 all$MSSubClass <- as.factor(all$MSSubClass)
 
+na_count_test <-sapply(all, function(y) sum(length(which(is.na(y)))))
+na_count_test <- data.frame(na_count_test)
+
+
+write_excel_csv(all, "New_Data.csv")
 ```
 
 ## Finding important variables with Random Forest
 The correlation table above provide a good overview of the most important numeric variables and multicolinerity among those variables. Next, I want to get an overview of the most important variables including the categorical variables.
+
 ```{r}
-#set.seed(123)
-#quick_RF <- randomForest(x=all.minus.nas[1:1461,-1], y=all.minus.nas$SalePrice[1:1461], ntree=100,importance=TRUE)
+# Neighborhood
+train <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Src/New_Data.csv")
 
-```
-
-# Version B (remove all NA by deleting columns)
-```{r}
-drop.na.columns <- c("PoolQC", "MiscFeature", "Alley", "Fence", "FireplaceQu", "LotFrontage")
-
-ql.minus.nas <- ql[ , !(names(ql) %in% drop.na.columns)]
-
-qlc <- na.omit(ql.minus.nas)
+train <- na.omit(train)
+train$GarageYrBlt <- as.integer(train$GarageYrBlt)
 ```
 
 
-##Distribution of Categorical Variables
-```{r Shiny Categorical Variables, eval=FALSE}
-### Shiny uses only numerical variables.
-shinyApp(
-  ui = fillPage(
-    fillCol(flex = c(NA, 1),
-            inputPanel(
-              selectInput("xcol", label = "X-axis:", 
-                          names(qlc))
-            ),
-            plotOutput("plot", height = "100%")
-    )
-  ),
-  server = function(input, output) {
-    output$plot = renderPlot( {
-      par(mfrow=c(1,1))
-      plot((qlc[,input$xcol]), main="Distribution of Categorical variables", sub=paste("Skewness:", round(e1071::skewness(qlc[,input$xcol]), 2)), col="light green")
-      polygon((qlc[,input$xcol]), col="light blue") }
-    )},
-  options = list(height = 700)
-)
+```{r}
+numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
+factorVars <- which(sapply(train, is.factor)) #index vector factor variables
+cat('There are', length(numericVars), 'numeric variables, and', length(factorVars), 'categoric variables')
+
+set.seed(123)
+quick_RF <- randomForest(x=train[, -79], y=train$SalePrice, ntree=100,importance=TRUE)
+imp_RF <- importance(quick_RF)
+imp_DF <- data.frame(Variables = row.names(imp_RF), MSE = imp_RF[,1])
+imp_DF <- imp_DF[order(imp_DF$MSE, decreasing = TRUE),]
+
+ggplot(imp_DF[1:20,], aes(x=reorder(Variables, MSE), y=MSE, fill=MSE)) + geom_bar(stat = 'identity') + labs(x = 'Variables', y= '% increase MSE if variable is randomly permuted') + coord_flip() + theme(legend.position="none")
+```
+####Top 3 most important factors Found !
+
+1) GrLivArea: Above grade (ground) living area square feet
+2) OverallQual: Rates the overall material and finish of the house
+
+       10	Very Excellent
+       9	Excellent
+       8	Very Good
+       7	Good
+       6	Above Average
+       5	Average
+       4	Below Average
+       3	Fair
+       2	Poor
+       1	Very Poor
+       
+3) Neighborhood: Physical locations within Ames city limits
+
+       Blmngtn	Bloomington Heights
+       Blueste	Bluestem
+       BrDale	Briardale
+       BrkSide	Brookside
+       ClearCr	Clear Creek
+       CollgCr	College Creek
+       Crawfor	Crawford
+       Edwards	Edwards
+       Gilbert	Gilbert
+       IDOTRR	Iowa DOT and Rail Road
+       MeadowV	Meadow Village
+       Mitchel	Mitchell
+       Names	North Ames
+       NoRidge	Northridge
+       NPkVill	Northpark Villa
+       NridgHt	Northridge Heights
+       NWAmes	Northwest Ames
+       OldTown	Old Town
+       SWISU	South & West of Iowa State University
+       Sawyer	Sawyer
+       SawyerW	Sawyer West
+       Somerst	Somerset
+       StoneBr	Stone Brook
+       Timber	Timberland
+       Veenker	Veenker
+
+```{r correlation2}
+all_numVar <- train[, numericVars]
+cor_numVar <- cor(all_numVar, use="pairwise.complete.obs")
+cor_sorted <- as.matrix(sort(cor_numVar[,'SalePrice'], decreasing = TRUE))
+ #select only high corelations
+CorHigh <- names(which(apply(cor_sorted, 1, function(x) abs(x)>0.5)))
+cor_numVar <- cor_numVar[CorHigh, CorHigh]
+
+corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt", tl.cex = 0.7,cl.cex = .7, number.cex=.7)
+```
+
+```{r neighborhood}
+
+df <- data.frame(tapply(train$SalePrice, train$Neighborhood, mean))
+library(data.table)
+setDT(df, keep.rownames = TRUE)[]
+colnames(df) <- c('Neighborhood','Average SalePrice')
+
+ggplot(df, aes(x = Neighborhood, y= `Average SalePrice`)) + 
+  geom_col(aes(fill = df$Neighborhood))+
+  geom_hline(yintercept=median(train$SalePrice), linetype="dashed", color = "red")+
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(data=train, aes(x=Neighborhood)) +
+        geom_histogram(stat='count')+
+        geom_label(stat = "count", aes(label = ..count.., y = ..count..), size=3)+
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+```{r split data}
+set.seed(12345)
+in_train <- createDataPartition(y = train$SalePrice, p = 3 / 4, list = FALSE)
+str(in_train)
+training <- train[ in_train, ] # three fourth of data go to training
+testing  <- train[-in_train, ]
 ```
 
 #Principal Component Analysis
@@ -591,95 +590,21 @@ shinyApp(
 We do PCA to better understand the main patterns in our data across the whole time period: how the companies differ regarding their financial and ESG score attributes. 
 We find an interesting relationship between the Environmental ESG score and financial performance indicators, and see that 2 principal components already explain 40% of the variance.
 
-```{r PCA all QTC Data}
-#[,-c(40)]
-pca_Cdata <- qtc
-
-pr_out_Cdata <- prcomp(pca_Cdata, scale. = TRUE)
-
-#pr_out_Cdata
-
-#Plot
-autoplot(pr_out_Cdata, data = pca_Cdata , colour = "SalePrice", label = TRUE, label.size = 3, shape = FALSE, loadings = TRUE, loadings.colour = 'black',
-         loadings.label = TRUE, loadings.label.size = 3, main = "Principal Component Analysis for Continuous Variables)")
-par(mar = c(5,4,3,3) + .1, las = 1, cex = 0.8)
-
-pr_var <- pr_out_Cdata$sdev ^ 2
-#pr_var
-pve <- pr_var / sum(pr_var)
-#pve
-
-plot(cumsum(pve), xlab = "Principal Components", ylab = "Cumulative Proportion of Variance Explained", ylim = c(0,1),type = 'b')
-
-```
-
-##PCA and Sales Index
-
-The PCA results are interesting since again, the four ESG variables appear in the opposite direction to the financial variables. It seems that in the short term, ESG and financial performance have a negative relationship.
-
-```{r}
-qtc$sale_Index <- cut(qtc$SalePrice, 3, labels = c("Minimun.Price.(34.6k.to.275k", "275k.to.515k", "515k.to.7560k"))
-
-table(qtc$sale_Index)
-
-qtc$sale_Index <- as.numeric(qtc$sale_Index)
-```
-
-```{r PCA Sales Index}
-df15b <- na.omit(qtc)
-# df15 <- df15[-1]
-
-#row.names(df15) <- df15b$Name.1
-pca_Cdata15 <- df15b
-
-pr_out_Cdata15 <- prcomp(pca_Cdata15, scale. = TRUE)
-
-#Plot
-autoplot(pr_out_Cdata15, data = pca_Cdata15 , colour = "sale_Index", label = TRUE, label.size = 3, shape = FALSE, loadings = TRUE, loadings.colour = 'black',
-         loadings.label = TRUE, loadings.label.size = 3, main = "Principal Component Analysis (Sales Index")
-
-par(mar = c(5,4,3,3) + .1, las = 1, cex = 0.8)
-
-pr_var15 <- pr_out_Cdata15$sdev ^ 2
-#pr_var
-pve15 <- pr_var15 / sum(pr_var15)
-#pve
-
-plot(pve15, xlab = "Principal Components", ylab = "Proportion of Variance Explained", ylim = c(0,1),type = 'b')
-
-plot(cumsum(pve15), xlab = "Principal Components", ylab = "Cumulative Proportion of Variance Explained", ylim = c(0,1),type = 'b')
-
-```
-
-```{r random foreast}
-set.seed(2018)
-quick_RF <- randomForest(x=all[1:1460,-79], y=all$SalePrice[1:1460], ntree=100,importance=TRUE)
-imp_RF <- importance(quick_RF)
-imp_DF <- data.frame(Variables = row.names(imp_RF), MSE = imp_RF[,1])
-imp_DF <- imp_DF[order(imp_DF$MSE, decreasing = TRUE),]
-
-ggplot(imp_DF[1:20,], aes(x=reorder(Variables, MSE), y=MSE, fill=MSE)) + geom_bar(stat = 'identity') + labs(x = 'Variables', y= '% increase MSE if variable is randomly permuted') + coord_flip() + theme(legend.position="none")
-
-```
-
 ```{r lasso}
-set.seed(1234)
-my_control <-trainControl(method="cv", number=5)
-lassoGrid <- expand.grid(alpha = 1, lambda = seq(0.001,0.1,by = 0.0005))
 
-lasso_mod <- train(x=train1, y=all$SalePrice[!is.na(all$SalePrice)], method='glmnet', trControl= my_control, tuneGrid=lassoGrid) 
-lasso_mod$bestTune
+library(lars)
+ols <- lm(SalePrice ~ . - SalePrice, data = training)
 
-LassoPred <- predict(lasso_mod, test1)
-predictions_lasso <- exp(LassoPred) #need to reverse the log to the real values
-head(predictions_lasso)
 
-sub_lasso <- data.frame(Id = test_labels, SalePrice = predictions_lasso)
+X <- model.matrix(ols)[ ,-79]
+y <- training$SalePrice
+lasso <- lars(X, y, type = "lasso", trace = FALSE)
 
+test_X <- model.matrix(ols, data = testing)[ ,-79]
+yhat_lasso <- predict(lasso, newx = test_X)$fit
+SSE_lasso <- colMeans( (testing$SalePrice - yhat_lasso) ^ 2 )
+min(SSE_lasso) 
+which(coef(lasso, s = which.min(SSE_lasso)) == 0)
 ```
-Detailed look into PCA results:
-
-`r pander(pr_out_Cdata15)`
-
 
 
