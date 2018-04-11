@@ -1,0 +1,879 @@
+---
+title: "Untitled"
+author: "LizhiziCui"
+date: "2/28/2018"
+output: 
+    html_document:
+    fig_caption: true
+    number_sections: no
+    toc: yes
+    toc_float: yes
+editor_options: 
+  chunk_output_type: inline
+---
+
+
+```{r}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+You could change the working directory. Get the address in the beginning getwd(), replace it by your project folder with setwd(). Then, when accessing a file just use read.table("./folder/file.R")
+
+
+```{r}
+# install.packages("rstudioapi") # run this if it's your first time using it to install
+library(rstudioapi) # load it
+# the following line is for getting the path of your current open file
+current_path <- getActiveDocumentContext()$path
+# The next line set the working directory to the relevant one:
+setwd(dirname(current_path ))
+# you can make sure you are in the right directory
+print( getwd() )
+
+```
+
+#Section I - Data Description
+```{r setup, include=FALSE}
+rm(list=ls())
+
+#install.packages(c("knitr" ,"purrr", "tidyr", "ggplot2", "readr", "dplyr", "corrplot", "RColorBrewer", "shiny", "ggfortify", "pander"))
+library(glmnet)
+library(purrr)
+library(tidyr)
+library(readr)
+library(corrplot)
+library(shiny)
+library(dplyr)
+library(ggplot2)
+library(e1071)
+library(glmnet)
+library(mice)
+library(lattice)
+library(VIM)
+library(caret)
+library(stargazer)
+library(gam)
+library(flam)
+#options(java.parameters = "-Xmx5g") #useful when bartmachine breaks because of Java on IOS
+library(bartMachine)
+library(tree)
+library(ISLR)
+library(RColorBrewer)
+library(ggfortify)
+library(scales)
+library(stargazer)
+library(rsconnect)
+library(knitr)
+library(gridExtra)
+library(scales)
+library(Rmisc)
+library(ggrepel)
+library(randomForest)
+library(psych)
+library(purrr)
+library(tidyr)
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(corrplot)
+library(RColorBrewer)
+library(shiny)
+library(ggfortify)
+library(pander)
+# setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+#"../data" 
+train <- read.csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Raw/train.csv")
+
+test <- read.csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Raw/test.csv")
+
+test$SalePrice <- NA
+all <- rbind(train,test,stringsAsFactors = FALSE)
+
+#test <- read.csv('/Users/lizhizicui/Desktop/Dataset/Kaggle House Price/test.csv')
+
+```
+
+##There are 1460 instances of training data and 1460 of test data. Total number of attributes equals 81, of which 36 is quantitative, 43 categorical + Id and SalePrice.##
+
+| Variable      | Quantitative? | Class  |
+|---------------|---------------|--------|
+| 1stFlrSF      | Yes           | int    |
+| 2ndFlrSF      | Yes           | int    |
+| 3SsnPorch     | Yes           | int    |
+| BedroomAbvGr  | Yes           | int    |
+| BsmtFinSF1    | Yes           | int    |
+| BsmtFinSF2    | Yes           | int    |
+| BsmtFullBath  | Yes           | int    |
+| BsmtHalfBath  | Yes           | int    |
+| BsmtUnfSF     | Yes           | int    |
+| EnclosedPorch | Yes           | int    |
+| Fireplaces    | Yes           | int    |
+| FullBath      | Yes           | int    |
+| GarageArea    | Yes           | int    |
+| GarageCars    | Yes           | int    |
+| GarageYrBlt   | Yes           | int    |
+| GrLivArea     | Yes           | int    |
+| HalfBath      | Yes           | int    |
+| KitchenAbvGr  | Yes           | int    |
+| LotArea       | Yes           | int    |
+| LotFrontage   | Yes           | int    |
+| LowQualFinSF  | Yes           | int    |
+| MasVnrArea    | Yes           | int    |
+| MiscVal       | Yes           | int    |
+| MoSold        | Yes           | int    |
+| MSSubClass    | Yes           | int    |
+| OpenPorchSF   | Yes           | int    |
+| OverallCond   | Yes           | int    |
+| OverallQual   | Yes           | int    |
+| PoolArea      | Yes           | int    |
+| ScreenPorch   | Yes           | int    |
+| TotalBsmtSF   | Yes           | int    |
+| TotRmsAbvGrd  | Yes           | int    |
+| WoodDeckSF    | Yes           | int    |
+| YearBuilt     | Yes           | int    |
+| YearRemodAdd  | Yes           | int    |
+| YrSold.       | Yes           | int    |
+| Alley         | No            | Factor |
+| BldgType      | No            | Factor |
+| BsmtCond      | No            | Factor |
+| BsmtExposure  | No            | Factor |
+| BsmtFinType1  | No            | Factor |
+| BsmtFinType2  | No            | Factor |
+| BsmtQual      | No            | Factor |
+| CentralAir    | No            | Factor |
+| Condition1    | No            | Factor |
+| Condition2    | No            | Factor |
+| Electrical    | No            | Factor |
+| ExterCond     | No            | Factor |
+| Exterior1st   | No            | Factor |
+| Exterior2nd   | No            | Factor |
+| ExterQual     | No            | Factor |
+| Fence         | No            | Factor |
+| FireplaceQu   | No            | Factor |
+| Foundation    | No            | Factor |
+| Functional    | No            | Factor |
+| GarageCond    | No            | Factor |
+| GarageFinish  | No            | Factor |
+| GarageQual    | No            | Factor |
+| GarageType    | No            | Factor |
+| Heating       | No            | Factor |
+| HeatingQC     | No            | Factor |
+| HouseStyle    | No            | Factor |
+| KitchenQual   | No            | Factor |
+| LandContour   | No            | Factor |
+| LandSlope     | No            | Factor |
+| LotConfig     | No            | Factor |
+| LotShape      | No            | Factor |
+| MasVnrType    | No            | Factor |
+| MiscFeature   | No            | Factor |
+| MSZoning      | No            | Factor |
+| Neighborhood  | No            | Factor |
+| PavedDrive    | No            | Factor |
+| PoolQC        | No            | Factor |
+| RoofMatl      | No            | Factor |
+| RoofStyle     | No            | Factor |
+| SaleCondition | No            | Factor |
+| SaleType      | No            | Factor |
+| Street        | No            | Factor |
+| Utilities.    | No            | Factor |
+
+`Quantitative`: 1stFlrSF, 2ndFlrSF, 3SsnPorch, BedroomAbvGr, BsmtFinSF1, BsmtFinSF2, BsmtFullBath, BsmtHalfBath, BsmtUnfSF, EnclosedPorch, Fireplaces, FullBath, GarageArea, GarageCars, GarageYrBlt, GrLivArea, HalfBath, KitchenAbvGr, LotArea, LotFrontage, LowQualFinSF, MSSubClass, MasVnrArea, MiscVal, MoSold, OpenPorchSF, OverallCond, OverallQual, PoolArea, ScreenPorch, TotRmsAbvGrd, TotalBsmtSF, WoodDeckSF, YearBuilt, YearRemodAdd, YrSold.
+
+`Qualitative`: Alley, BldgType, BsmtCond, BsmtExposure, BsmtFinType1, BsmtFinType2, BsmtQual, CentralAir, Condition1, Condition2, Electrical, ExterCond, ExterQual, Exterior1st, Exterior2nd, Fence, FireplaceQu, Foundation, Functional, GarageCond, GarageFinish, GarageQual, GarageType, Heating, HeatingQC, HouseStyle, KitchenQual, LandContour, LandSlope, LotConfig, LotShape, MSZoning, MasVnrType, MiscFeature, Neighborhood, PavedDrive, PoolQC, RoofMatl, RoofStyle, SaleCondition, SaleType, Street, Utilities.
+
+```{R, EDA}
+
+
+# summary(train)
+# summary(test)
+hist(train$SalePrice, breaks=seq(30000, 760000, 500),prob=TRUE )
+lines(density(train$SalePrice), col="blue", lwd=2)       
+lines(density(train$SalePrice, adjust=2), lty="dotted")
+summary(train$SalePrice)
+
+# SalePrice does not have a standard normal distribution, it is right skewed
+
+# Log the SalePrice, the distribution of log(SalePrice) looks like a normal distribution
+train$log_saleprice <- log(train$SalePrice)
+
+hist(train$log_saleprice, breaks=seq(10, 14, 0.025),prob=TRUE )
+lines(density(train$log_saleprice), col="blue", lwd=2)        
+```
+
+## Correlation with SalePrice
+What numeric variables correlated with SalePrice
+```{R, EDA}
+all$Id <- rownames(all)
+numericVars <- which(sapply(all, is.numeric))
+numericVarNames <- names(numericVars)
+length(numericVars)
+
+
+all_numVar <- all[, numericVars]
+cor_numVar <- cor(all_numVar, use="pairwise.complete.obs") #correlations of all numeric variables
+
+#sort on decreasing correlations with SalePrice
+cor_sorted <- as.matrix(sort(cor_numVar[,'SalePrice'], decreasing = TRUE))
+ #select only high corelations
+CorHigh <- names(which(apply(cor_sorted, 1, function(x) abs(x)>0.5)))
+cor_numVar <- cor_numVar[CorHigh, CorHigh]
+
+corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt")
+
+```
+According to the correlation table, variable 'Overall Quality'(Overall material and finish quality), the 'GrLivArea' (‘Above Grade’ Living Area) and 'GarageCars'(Size of garage in car capacity) are the top 3 variables that highly correlated to SalePrice.
+For the rest,it is also clear the multicollinearity is an issue. For example: the correlation between GarageCars and GarageArea is very high (0.89), and both have similar (high) correlations with SalePrice. The other 6 six variables with a correlation higher than 0.5 with SalePrice are: -TotalBsmtSF: Total square feet of basement area -1stFlrSF: First Floor square feet -FullBath: Full bathrooms above grade -TotRmsAbvGrd: Total rooms above grade (does not include bathrooms) -YearBuilt: Original construction date -YearRemodAdd: Remodel date (same as construction date if no remodeling or additions)
+
+## Overall Quality 
+Overall Quality is observed to have positive correlation with SalePrice. It does not seem to have noticeble outliers apart from a point in level 4. 
+```{r}
+ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallQual), y=SalePrice))+
+        geom_boxplot() + labs(x='Overall Quality') +
+        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
+```
+
+## 'GrLivArea' (‘Above Grade’ Living Area)
+GrLivArea is observed to have positive correlation with SalePrice, which make sense since big houses are generally more expensive than smaller. One thing worth noticing is that there are two houses with really large living areas and low SalePrice (potential to be outliers). I checked the data and found out they are houses 524, 1299 and 2550(NA for SalePrice).
+```{r}
+ggplot(data=all[!is.na(all$SalePrice),], aes(x=GrLivArea, y=SalePrice))+
+        geom_point(col='black') + geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1)) +
+        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
+outlier1 <- all%>% filter(GrLivArea > 4500)
+outlier1$Id
+all[c(524, 1299, 2550), c('SalePrice', 'GrLivArea', 'OverallQual')]
+
+```
+
+## GarageCars
+The Size of garage shows a positive correlation with SalePrice from level 0-3 but fall at level 4 (non-linear correlation). It make sense because only big houses have large garage, and bigger house usually have higher SalePrice. Also for houses with a garage of capacity of 3 cars(level 3), there are several outliners with much higher SalePrice existing, it must be other factors affecting the outcome price. Something might happen for houses with level 4 garage that needed to explained.
+```{r}
+
+summary(all$GarageCars)
+ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(GarageCars), y=SalePrice))+
+        geom_boxplot() + labs(x='Size of Garage/car') +
+        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
+
+outlier2 <- all %>% 
+  filter(GarageCars == 3)%>%
+  filter(SalePrice > 700000)
+
+outlier2$Id
+all[c(524, 1299, 692, 1183), c('SalePrice', 'GrLivArea', 'OverallQual','GarageCars')]
+```
+
+#Section II - EDA
+
+##Distribution of Continuous Variables
+```{R, EDA}
+#Selecting numeric only and categorical variables.
+qt <- train %>% keep(is.numeric)
+ql <- train %>% keep(is.factor)
+
+qtc <- na.omit(qt)
+
+qtc$sale_Index <- cut(qtc$SalePrice, 3, labels = c("Minimun.Price.(34.6k.to.275k", "275k.to.515k", "515k.to.7560k"))
+
+table(qtc$sale_Index)
+
+qtc$sale_Index <- as.numeric(qtc$sale_Index)
+```
+
+```{r Shiny Continuous Variables, eval=FALSE}
+
+### Shiny uses only numerical variables.
+shinyApp(
+  ui = fillPage(
+    fillCol(flex = c(NA, 1),
+            inputPanel(
+              selectInput("xcol", label = "X-axis:", 
+                          names(qtc))
+            ),
+            plotOutput("plot", height = "100%")
+    )
+  ),
+  server = function(input, output) {
+    output$plot = renderPlot( {
+      par(mfrow=c(1,1))
+      plot(density(qtc[,input$xcol]), main="Distribution of Quantitative variables", sub=paste("Skewness:", round(e1071::skewness(qtc[,input$xcol]), 2)))
+      polygon(density(qtc[,input$xcol]), col="light blue") }
+    )},
+  options = list(height = 700)
+)
+
+```
+
+
+##Explore missing values
+### Version A (Under construction) 
+```{r, warning=FALSE, message=FALSE}
+na_count <-sapply(train, function(y) sum(length(which(is.na(y)))))
+na_count <- data.frame(na_count)
+
+# maping_nas <- aggr(train, plot = FALSE, col = c('navyblue','red'), numbers = TRUE, sortVars = TRUE, labels = names(train), prop = FALSE)
+# 
+# sumnas <- as.matrix(summary(train))
+# 
+# plot_nas <- aggr(train, plot = TRUE, col =  c('navyblue','lightblue'), numbers = TRUE, sortVars = TRUE, labels = names(train), cex.axis = .5, gap = 1, ylab = c("Histogram of missing data","Pattern"), prop = TRUE, digits = "2")
+```
+
+Most missing: "PoolQC", "MiscFeature", "Alley", "Fence", "FireplaceQu", "LotFrontage"
+
+Variable | Count of Missing
+---------|-----------------
+PoolQC | 1453
+MiscFeature | 1406
+Alley | 1369
+Fence | 1179
+FireplaceQu | 690
+LotFrontage | 259
+GarageType | 81
+GarageYrBlt | 81
+GarageFinish | 81
+GarageQual81
+GarageCond | 81
+BsmtExposur | 38
+BsmtFinType2 | 38
+BsmtQual | 37
+BsmtCond | 37
+BsmtFinType1 | 37
+MasVnrType | 8
+
+PoolQC: Pool quality
+		
+       Ex	Excellent
+       Gd	Good
+       TA	Average/Typical
+       Fa	Fair
+       NA	No Pool
+       
+MiscFeature: Miscellaneous feature not covered in other categories
+		
+       Elev	Elevator
+       Gar2	2nd Garage (if not described in garage section)
+       Othr	Other
+       Shed	Shed (over 100 SF)
+       TenC	Tennis Court
+       NA	None
+       
+Alley: Type of alley access to property
+
+       Grvl	Gravel
+       Pave	Paved
+       NA 	No alley access     
+       
+Fence: Fence quality
+		
+       GdPrv	Good Privacy
+       MnPrv	Minimum Privacy
+       GdWo	Good Wood
+       MnWw	Minimum Wood/Wire
+       NA	No Fence     
+       
+FireplaceQu: Fireplace quality
+
+       Ex	Excellent - Exceptional Masonry Fireplace
+       Gd	Good - Masonry Fireplace in main level
+       TA	Average - Prefabricated Fireplace in main living area or Masonry Fireplace in basement
+       Fa	Fair - Prefabricated Fireplace in basement
+       Po	Poor - Ben Franklin Stove
+       NA	No Fireplace   
+       
+GarageType: Garage location (**smae for GarageYrBlt/GarageFinish/GarageCars/GarageArea/GarageQual/GarageCond)
+		
+       2Types	More than one type of garage
+       Attchd	Attached to home
+       Basment	Basement Garage
+       BuiltIn	Built-In (Garage part of house - typically has room above garage)
+       CarPort	Car Port
+       Detchd	Detached from home
+       NA	No Garage    
+       
+BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/BsmtFinSF1/BsmtFinType2/BsmtFinSF2/BsmtUnfSF/BsmtQual)
+
+       Gd	Good Exposure
+       Av	Average Exposure (split levels or foyers typically score average or above)	
+       Mn	Mimimum Exposure
+       No	No Exposure
+       NA	No Basement
+       
+
+#MasVnrType (Masonry veneer type) and LotFrontage (Linear feet of street connected to property) should not have NA in priciple.  
+
+```{r}
+all$PoolQC <- addNA(all$PoolQC)
+all$PoolQC[is.na(all$PoolQC)] <- 'None'
+Qualities <- c('None' = 0, 'Po' = 1, 'Fa' = 2, 'TA' = 3, 'Gd' = 4, 'Ex' = 5)
+all$PoolQC<-as.integer(revalue(all$PoolQC, Qualities))
+table(all$PoolQC)
+
+
+all$MiscFeature[is.na(all$MiscFeature)] <- 'None'
+table(all$MiscFeature)
+
+
+all$Alley[is.na(all$Alley)] <- 'No Alley'
+all$Alley <- as.factor(all$Alley)
+table(all$Alley)
+
+all$Fence[is.na(all$Fence)] <- 'No Fence'
+table(all$Fence)
+
+
+all$FireplaceQu[is.na(all$FireplaceQu)] <- 'No Fireplace'
+all$FireplaceQu<-as.integer(revalue(all$FireplaceQu, Qualities))
+table(all$FireplaceQu)
+
+#GarageYrBlt/GarageFinish/GarageCars/GarageArea/GarageQual/GarageCond
+all$GarageType[is.na(all$GarageType)] <- 'No Garage'
+all$GarageType <- as.factor(all$GarageType)
+table(all$GarageType)
+
+all$GarageYrBlt[is.na(all$GarageYrBlt)] <- 'No Garage'
+all$GarageYrBlt <- as.factor(all$GarageYrBlt)
+table(all$GarageYrBlt)
+
+all$GarageFinish[is.na(all$GarageFinish)] <- 'No Garage'
+all$GarageFinish <- as.factor(all$GarageFinish)
+table(all$GarageFinish)
+
+all$GarageCars[is.na(all$GarageCars)] <- 'No Garage'
+all$GarageCars <- as.factor(all$GarageCars)
+table(all$GarageCars)
+
+all$GarageArea[is.na(all$GarageArea)] <- 'No Garage'
+all$GarageArea <- as.factor(all$GarageArea)
+table(all$GarageArea)
+
+all$GarageQual[is.na(all$GarageQual)] <- 'No Garage'
+all$GarageQual <- as.factor(all$GarageQual)
+table(all$GarageQual)
+
+all$GarageCond[is.na(all$GarageCond)] <- 'No Garage'
+all$GarageCond <- as.factor(all$GarageCond)
+table(all$GarageCond)
+
+#BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/BsmtFinSF1/BsmtFinType2/BsmtFinSF2/BsmtUnfSF/BsmtQual)
+all$BsmtQual[is.na(all$BsmtQual)] <- 'No Basement'
+all$BsmtQual<-as.integer(revalue(all$BsmtQual, Qualities))
+table(all$BsmtQual)
+
+all$BsmtExposure[is.na(all$BsmtExposure)] <- 'No Basement'
+all$BsmtExposure<-as.integer(revalue(all$BsmtExposure, Qualities))
+table(all$BsmtExposure)
+
+all$BsmtFinType1[is.na(all$BsmtFinType1)] <- 'No Basement'
+all$BsmtFinType1<-as.integer(revalue(all$BsmtFinType1, Qualities))
+table(all$BsmtFinType1)
+
+all$BsmtFinType2[is.na(all$BsmtFinType2)] <- 'No Basement'
+all$BsmtFinType2<-as.integer(revalue(all$BsmtFinType2, Qualities))
+table(all$BsmtFinType2)
+
+all$BsmtUnfSF[is.na(all$BsmtUnfSF)] <- 'No Basement'
+all$BsmtUnfSF<-as.integer(revalue(all$BsmtUnfSF, Qualities))
+table(all$BsmtUnfSF)
+
+all$BsmtFinSF1[is.na(all$BsmtFinSF1)] <- 'No Basement'
+all$BsmtFinSF1<-as.integer(revalue(all$BsmtFinSF1, Qualities))
+table(all$BsmtFinSF1)
+
+all$BsmtFinSF2[is.na(all$BsmtFinSF2)] <- 'No Basement'
+all$BsmtFinSF2<-as.integer(revalue(all$BsmtFinSF2, Qualities))
+table(all$BsmtFinSF2)
+
+drop.na.columns <- c( "MasVnrType","LotFrontage")
+all.minus.nas <- all[ , !(names(all) %in% drop.na.columns)]
+```
+
+## Finding important variables with Random Forest
+The correlation table above provide a good overview of the most important numeric variables and multicolinerity among those variables. Next, I want to get an overview of the most important variables including the categorical variables.
+```{r}
+#set.seed(123)
+#quick_RF <- randomForest(x=all.minus.nas[1:1461,-1], y=all.minus.nas$SalePrice[1:1461], ntree=100,importance=TRUE)
+
+```
+
+# Version B (remove all NA by deleting columns)
+```{r}
+drop.na.columns <- c("PoolQC", "MiscFeature", "Alley", "Fence", "FireplaceQu", "LotFrontage")
+
+ql.minus.nas <- ql[ , !(names(ql) %in% drop.na.columns)]
+
+qlc <- na.omit(ql.minus.nas)
+```
+
+
+##Distribution of Categorical Variables
+```{r Shiny Categorical Variables, eval=FALSE}
+### Shiny uses only numerical variables.
+shinyApp(
+  ui = fillPage(
+    fillCol(flex = c(NA, 1),
+            inputPanel(
+              selectInput("xcol", label = "X-axis:", 
+                          names(qlc))
+            ),
+            plotOutput("plot", height = "100%")
+    )
+  ),
+  server = function(input, output) {
+    output$plot = renderPlot( {
+      par(mfrow=c(1,1))
+      plot((qlc[,input$xcol]), main="Distribution of Categorical variables", sub=paste("Skewness:", round(e1071::skewness(qlc[,input$xcol]), 2)), col="light green")
+      polygon((qlc[,input$xcol]), col="light blue") }
+    )},
+  options = list(height = 700)
+)
+```
+
+```{r}
+df <- data.frame(tapply(train$SalePrice, train$Neighborhood, mean))
+
+
+library(data.table)
+setDT(df, keep.rownames = TRUE)[]
+
+ggplot(df, aes(x = df$rn, y= df$tapply.train.SalePrice..train.Neighborhood..mean.)) + geom_col(aes(fill = df$rn))
+```
+
+
+#Principal Component Analysis
+
+
+We do PCA to better understand the main patterns in our data across the whole time period: how the companies differ regarding their financial and ESG score attributes. 
+We find an interesting relationship between the Environmental ESG score and financial performance indicators, and see that 2 principal components already explain 40% of the variance.
+
+```{r PCA all QTC Data}
+#[,-c(40)]
+pca_Cdata <- qtc
+
+pr_out_Cdata <- prcomp(pca_Cdata, scale. = TRUE)
+
+#pr_out_Cdata
+
+#Plot
+autoplot(pr_out_Cdata, data = pca_Cdata , colour = "SalePrice", label = TRUE, label.size = 3, shape = FALSE, loadings = TRUE, loadings.colour = 'black',
+         loadings.label = TRUE, loadings.label.size = 3, main = "Principal Component Analysis for Continuous Variables)")
+par(mar = c(5,4,3,3) + .1, las = 1, cex = 0.8)
+
+pr_var <- pr_out_Cdata$sdev ^ 2
+#pr_var
+pve <- pr_var / sum(pr_var)
+#pve
+
+plot(cumsum(pve), xlab = "Principal Components", ylab = "Cumulative Proportion of Variance Explained", ylim = c(0,1),type = 'b')
+
+```
+
+##PCA and Sales Index
+
+The PCA results are interesting since again, the four ESG variables appear in the opposite direction to the financial variables. It seems that in the short term, ESG and financial performance have a negative relationship.
+
+```{r}
+qtc$sale_Index <- cut(qtc$SalePrice, 3, labels = c("Minimun.Price.(34.6k.to.275k", "275k.to.515k", "515k.to.7560k"))
+
+table(qtc$sale_Index)
+
+qtc$sale_Index <- as.numeric(qtc$sale_Index)
+```
+
+```{r PCA Sales Index}
+df15b <- na.omit(qtc)
+# df15 <- df15[-1]
+
+#row.names(df15) <- df15b$Name.1
+pca_Cdata15 <- df15b
+
+pr_out_Cdata15 <- prcomp(pca_Cdata15, scale. = TRUE)
+
+#Plot
+autoplot(pr_out_Cdata15, data = pca_Cdata15 , colour = "sale_Index", label = TRUE, label.size = 3, shape = FALSE, loadings = TRUE, loadings.colour = 'black',
+         loadings.label = TRUE, loadings.label.size = 3, main = "Principal Component Analysis (Sales Index")
+
+par(mar = c(5,4,3,3) + .1, las = 1, cex = 0.8)
+
+pr_var15 <- pr_out_Cdata15$sdev ^ 2
+#pr_var
+pve15 <- pr_var15 / sum(pr_var15)
+#pve
+
+plot(pve15, xlab = "Principal Components", ylab = "Proportion of Variance Explained", ylim = c(0,1),type = 'b')
+
+plot(cumsum(pve15), xlab = "Principal Components", ylab = "Cumulative Proportion of Variance Explained", ylim = c(0,1),type = 'b')
+
+```
+
+Detailed look into PCA results:
+
+`r pander(pr_out_Cdata15)`
+
+
+#Section III - Inference
+
+In this section we analyze the relationship between House sales Price and distance from Utah State University.  
+
+##Ames, Iowa
+"Ames, IA has a population of 62,815 people with a median age of 23.2 and a median household income of $41,616. Between 2014 and 2015 the population of Ames, IA grew from 61,276 to 62,815, a 2.51% increase and its median household income declined from $42,373 to $41,616, a -1.79% decrease.
+
+The population of Ames, IA is 81.8% White, 9.2% Asian, and 3.14% Black. 12.4% of the people in Ames, IA speak a non-English language, and 90.6% are U.S. citizens.
+
+The median property value in Ames, IA is $174,300, and the homeownership rate is 41%. Most people in Ames, IA commute by Drove Alone, and the average commute time is 15.7 minutes. The average car ownership in Ames, IA is 2 cars per household." [^A]
+
+[^A] https://datausa.io/profile/geo/ames-ia/ 
+
+##Hypothesis
+
+The city of Ames is a college city, with approximately 35,993 students (exluding postdocs), accouting for more than 57% of the population. This is a conservative estimate since we are not including the university's staff. Arguebly, at least 60% of Ames works and/or studies at the Iowa State University.
+
+`Then, what is the relationship between distance from the university and the final sales price of a house?`
+
+
+We hypothesize that there is a positive association between final sales price and distance from ISU. In other words, houses that are further away from the university are, in general, sold for a higher price than those in neighborhoods closer to ISU. Without doing any data analysis, we know that there is a golf course at the opposite end of city from the University, which could be evidence supporting our hypothesis. Additionally, student housing usually has a lower price in comparison with other non-student houses, if this is true in Ames, then our hypothesis should be correct.
+
+`Hypothesis: $Sales Price = \beta_0 + \beta_{Dist. ISU} + \beta_{House Quality} + \beta_{Size} + ... + \mu$ `
+
+
+Our dataset does not have the exact location of each house, so we used the average distance between the approximate center point of each neighborhood to the center of IUS campus. We used google maps to calculate the distance in miles by car and walking, as well as, the time it would take to go from the location to the IUS campus. Since the campus is fairly large we used Global Café, 513 Farm House Ln, Ames, IA, 50010, as our reference point representing the University.
+
+`New variables`
+| Variable      | Description                                                                                  |
+|---------------|----------------------------------------------------------------------------------------------|
+| Neighborhood  | The name of the neighborhood from the original data.                                         |
+| FullName      | Full name of the neighborhood.                                                               |
+| Lat/Log       | The approximate latitude and longitude of the reference point for each neighborhood.         |
+| Car.miles     | Average distance of suggested routes between the reference point and the ISU campus.         |
+| Car.Time.min  | Average journey duration of suggested routes between the reference point and the ISU campus. |
+| Walk.miles    | Average distance of suggested routes between the reference point and the ISU campus.         |
+| Walk.time.min | Average journey duration of suggested routes between the reference point and the ISU campus. |
+| Bus.time.min  | Average journey duration of suggested routes between the reference point and the ISU campus. |
+
+
+
+```{r, message=FALSE, warning=FALSE}
+
+#Load treated and processed data
+
+New_Data <- read_csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Processed/New_Data.csv")
+
+#Load the data with distance between ISU and 
+distance <- read_csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Processed/distance.csv")
+
+#Add the distance data to both Train and Test datasets.
+d_train <- left_join(New_Data, distance, by = "Neighborhood")
+
+```
+
+##OLS Model
+
+First we ran a naive OLS model including only the variables of interest in the model. The model had statistical significance with an F-statistic of 26.33 and R^{2} of 0.1097. Our variables of interest were statistically significant at the 0.05 level with the exception of Car.Miles. 
+
+
+Car.miles     -24642.0 .  
+Car.Time.min    2955.2 
+Walk.miles     71320.1 *  
+Walk.time.min  -3111.3 *  
+Bus.time.min    3467.4 ***
+
+```{r}
+#d_train1 <- d_train[,-c(73, 75, 7, 74, 57,4, 13, 83,84)]
+d_train_noNAs <- na.omit(d_train)
+
+#OLS Model 1 - very naive considering only the variab
+
+naive.model <- lm(SalePrice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min, data = d_train_noNAs)
+summary(naive.model)
+```
+
+
+When we controled for the overall quality of the house then our model became more significative with a new R^{2} of 0.65 and an F-statistic of 335.7. 
+
+<Model 1>
+
+Variable      Coefficient Model 1
+Car.miles      -13443.9    
+Car.Time.min    -4864.6 ** 
+Walk.miles     103858.8 ***
+Walk.time.min   -3734.8 ***
+Bus.time.min      397.6 .  
+OverallQual     46999.1 ***
+
+```{r message=FALSE, warning=FALSE}
+
+#Eliminate variables with highest number of NAs
+# Num. | Variable | NAs
+# 73 -   PoolQC   | 1453
+# 75 - MiscFeature| 1406
+# 7 -       Alley | 1369
+# 74 -      Fence | 1179
+# 57 -FireplaceQu | 690
+# 4 - LotFrontage | 259
+
+##Remove character variables as well
+
+m1.train <- lm(SalePrice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min + OverallQual, data = d_train_noNAs)
+anova(naive.model, m1.train)
+summary(m1.train)
+
+```
+
+Car.miles                                            -9.271e+04  1.049e+05  -0.884 0.376940    
+Car.Time.min                                         -4.381e+03  5.489e+03  -0.798 0.424979    
+Walk.miles                                           -3.921e+04  9.542e+04  -0.411 0.681202    
+Walk.time.min                                         8.364e+03  6.246e+03   1.339 0.180941    
+Bus.time.min                                         -1.806e+03  5.569e+02  -3.243 0.001236 ** 
+OverallQual                                           6.464e+03  1.406e+03   4.597 5.03e-06 ***
+```{r}
+m2.train <- lm(SalePrice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min + ., data = d_train_noNAs)
+summary(m2.train)
+```
+
+
+<Use pander to show results>
+
+Model 1
+
+[Interpret]
+
+Model 2
+
+[Interpret]
+
+Model 3
+
+[Interpret]
+
+##Lasso
+
+The Lasso function will help us select the variables with the highest predictive power on Sales Price. It might also give us a clearer picture that will help us better assess our hypothesis.
+
+
+Each curve corresponds to a variable. It shows the path of its coefficient against the ℓ1-norm of the whole coefficient vector at as λ varies. The axis above indicates the number of nonzero coefficients at the current λ, which is the effective degrees of freedom (df) for the lasso. Users may also wish to annotate the curves; this can be done by setting label = TRUE in the plot command.
+
+
+```{r}
+set.seed(12345) # = Seed for replication
+
+x <- model.matrix(log_saleprice ~ ., data = d_train_noNAs)[,-75]
+y <- d_train_noNAs$log_saleprice
+ 
+### We then fit a Lasso regression model (alpha = 1)
+fit.lasso <- glmnet(x, y, alpha = 1, family = "gaussian")
+plot(fit.lasso, xvar = "lambda", label = TRUE)
+ 
+### Now we cross-validate
+cv.lasso <- cv.glmnet(x, y)
+
+cv.lasso$lambda.min 
+cv.lasso$lambda.1se
+
+#coef(cv.lasso, s = "lambda.min")
+```
+
+
+Cross-Validation plot suggests that the model works best when it has approximately 43 predictors. Although we still have many predictors, lasso helped to reduce the number of variables by over 53%. We can use cross-validation to extract coefficients that collectively minimize mean squared error.
+ 
+It includes the cross-validation curve (red dotted line), and upper and lower standard deviation curves along the λ sequence (error bars). Two selected λ’s are indicated by the vertical dotted lines (see below).
+
+We can view the selected λ’s and the corresponding coefficients. For example,
+
+lambda.min is the value of λ that gives minimum mean cross-validated error. The other λ saved is  lambda.1se, which gives the most regularized model such that error is within one standard error of the minimum.
+
+```{r}
+plot(cv.lasso)
+```
+ 
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+set.seed(12345) # = Seed for replication
+
+### Extract coefficients corresponding to lambda.min (minimum mean cross-validated error)
+min.coef <- coef(cv.lasso, s = "lambda.min")
+
+#print(as.matrix(min.coef))
+
+```
+
+| #  | Variable           | Result    |
+|----|--------------------|-----------|
+| RoofMatlWdShngl    | -5.35E-02 |
+| MSZoningRM         | -5.01E-02 |
+| FireplaceQuPo      | -3.93E-02 |
+| PavedDriveP        | -2.94E-02 |
+| GarageTypeDetchd   | -2.13E-02 |
+| BsmtFinType2BLQ    | -2.03E-02 |
+| KitchenQualTA      | -1.69E-02 |
+| GarageFinishUnf    | -6.28E-03 |
+| Exterior1stHdBoard | -5.51E-03 |
+| BsmtQualTA         | -4.63E-03 |
+| Exterior1stWdShing | -3.04E-03 |
+| HeatingQCTA        | -1.37E-03 |
+| HouseStyle1.5Unf   | -2.22E-04 |
+| PoolArea           | -7.25E-05 |
+| LotArea            | 4.19E-07  |
+| SalePrice          | 3.14E-06  |
+| GrLivArea          | 4.34E-06  |
+| WoodDeckSF         | 5.39E-06  |
+| ScreenPorch        | 2.44E-05  |
+| OpenPorchSF        | 5.49E-05  |
+| YearRemodAdd       | 4.87E-04  |
+| BsmtFinType2LwQ    | 1.24E-03  |
+| MoSold             | 1.47E-03  |
+| BsmtFullBath       | 3.67E-03  |
+| CentralAirY        | 4.04E-03  |
+| GarageTypeAttchd   | 4.14E-03  |
+| TotRmsAbvGrd       | 4.79E-03  |
+| BsmtQualGd         | 6.01E-03  |
+| LandContourLow     | 6.71E-03  |
+| OverallCond        | 9.10E-03  |
+| KitchenQualGd      | 1.27E-02  |
+| OverallQual        | 1.63E-02  |
+| LandSlopeMod       | 2.04E-02  |
+| Exterior1stBrkFace | 2.16E-02  |
+| GarageCars         | 2.85E-02  |
+| ExterQualGd        | 3.35E-02  |
+
+
+##New OLS
+
+Our new model with only 18 variables (instead of all variables) has an adjusted R-squared of 0.73 - a significant result in comparison to an adjusted R-square of .96 but including all 80 variables!). In this adapted model, our variables of interest (Car.miles, Car.Time.min, Walk.miles, Walk.time.min, Bus.time.min) have a very small coefficient and all of them (except for Car.miles) are statistically significant at the 0.05 level).
+
+
+```{r}
+m4.train <- lm(SalePrice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min + PoolArea + LotArea + GrLivArea + WoodDeckSF + ScreenPorch + OpenPorchSF + YearRemodAdd + MoSold + BsmtFullBath +TotRmsAbvGrd + OverallCond + OverallQual + GarageCars
+, data = d_train_noNAs)
+summary(m4.train)
+
+m5.train <- lm(log_saleprice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min + PoolArea + LotArea + GrLivArea + WoodDeckSF + ScreenPorch + OpenPorchSF + YearRemodAdd + MoSold + BsmtFullBath +TotRmsAbvGrd + OverallCond + OverallQual + GarageCars
+, data = d_train_noNAs)
+
+
+summary(m5.train)
+```
+
+##Results
+
+<center>
+
+`Coefficients of Interest from the Improved Model`
+
+| Coefficients  |            |      |          |      |
+|---------------|------------|------|----------|------|
+|               | Model 1    | Model 2    | Model 3   |
+| Car.miles     | -24642.    | -13443.9   | -92710    |
+| Car.Time.min  | 2955.2     | -4864.6**  | -4381     |
+| Walk.miles    | 71320.1*   | 103858.8***| -39210    |
+| Walk.time.min | -3111.3*   | -3734.8*** | 8364      |
+| Bus.time.min  | 3467.4***  | 397.6 .    | -1806 **  |
+| OverallQual   | -  -  -  - | 46999.1*** | 6464***   |
+
+
+|VARIABLES      | OLS Coeff    | Association |
+|---------------|--------------|-------------|
+| Car.miles     | -$5.491      | Negative    |
+| Car.Time.min  | -$4.567      | Negative    |
+| Walk.miles    |  $8.734      | Positive    |
+| Walk.time.min | -$3.164      | Negative    |
+| Bus.time.min  | -$6.106      | Negative    |
+
+</center>
+
+These results go against the initial hypothesis that there is a positive association between final sales price and distance from ISU. In fact, they reveal the opposite, on average, each additional mile away from campus is associated with a price drop of approximately $5,491 in the final sales price. 
