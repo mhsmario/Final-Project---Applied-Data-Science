@@ -1,0 +1,294 @@
+---
+title: "Final Project - Inference"
+author: "Mario Saraiva"
+date: "4/11/2018"
+output:
+  toc: yes
+  toc_float: yes
+---
+
+```{r setup, include=FALSE}
+rm(list=ls())
+
+#install.packages(c("knitr" ,"purrr", "tidyr", "ggplot2", "readr", "dplyr", "corrplot", "RColorBrewer", "shiny", "ggfortify", "pander"))
+library(glmnet)
+library(purrr)
+library(tidyr)
+library(readr)
+library(corrplot)
+library(shiny)
+library(dplyr)
+library(ggplot2)
+library(e1071)
+library(glmnet)
+library(mice)
+library(lattice)
+library(VIM)
+library(caret)
+library(stargazer)
+library(gam)
+library(flam)
+#options(java.parameters = "-Xmx5g") #useful when bartmachine breaks because of Java on IOS
+library(bartMachine)
+library(tree)
+library(ISLR)
+library(RColorBrewer)
+library(ggfortify)
+library(scales)
+library(stargazer)
+library(rsconnect)
+library(knitr)
+library(gridExtra)
+library(scales)
+library(Rmisc)
+library(ggrepel)
+library(randomForest)
+library(psych)
+library(purrr)
+library(tidyr)
+library(ggplot2)
+library(readr)
+library(dplyr)
+library(corrplot)
+library(RColorBrewer)
+library(shiny)
+library(ggfortify)
+library(pander)
+```
+
+#Section III - Inference
+
+In this section we analyze the relationship between House sales Price and distance from Utah State University.  
+
+##Ames, Iowa
+"Ames, IA has a population of 62,815 people with a median age of 23.2 and a median household income of $41,616. Between 2014 and 2015 the population of Ames, IA grew from 61,276 to 62,815, a 2.51% increase and its median household income declined from $42,373 to $41,616, a -1.79% decrease.
+
+The population of Ames, IA is 81.8% White, 9.2% Asian, and 3.14% Black. 12.4% of the people in Ames, IA speak a non-English language, and 90.6% are U.S. citizens.
+
+The median property value in Ames, IA is $174,300, and the homeownership rate is 41%. Most people in Ames, IA commute by Drove Alone, and the average commute time is 15.7 minutes. The average car ownership in Ames, IA is 2 cars per household." [^A]
+
+[^A] https://datausa.io/profile/geo/ames-ia/ 
+
+##Hypothesis
+
+The city of Ames is a college city, with approximately 35,993 students (exluding postdocs), accouting for more than 57% of the population. This is a conservative estimate since we are not including the university's staff. Arguebly, at least 60% of Ames works and/or studies at the Iowa State University.
+
+`Then, what is the relationship between distance from the university and the final sales price of a house?`
+
+
+We hypothesize that there is a positive association between final sales price and distance from ISU. In other words, houses that are further away from the university are, in general, sold for a higher price than those in neighborhoods closer to ISU. Without doing any data analysis, we know that there is a golf course at the opposite end of city from the University, which could be evidence supporting our hypothesis. Additionally, student housing usually has a lower price in comparison with other non-student houses, if this is true in Ames, then our hypothesis should be correct.
+
+`Hypothesis: $Sales Price = \beta_0 + \beta_{Dist. ISU} + \beta_{House Quality} + \beta_{Size} + ... + \mu$ `
+
+
+Our dataset does not have the exact location of each house, so we used the average distance between the approximate center point of each neighborhood to the center of IUS campus. We used google maps to calculate the distance in miles by car and walking, as well as, the time it would take to go from the location to the IUS campus. Since the campus is fairly large we used Global Café, 513 Farm House Ln, Ames, IA, 50010, as our reference point representing the University.
+
+`New variables`
+| Variable      | Description                                                                                  |
+|---------------|----------------------------------------------------------------------------------------------|
+| Neighborhood  | The name of the neighborhood from the original data.                                         |
+| FullName      | Full name of the neighborhood.                                                               |
+| Lat/Log       | The approximate latitude and longitude of the reference point for each neighborhood.         |
+| Car.miles     | Average distance of suggested routes between the reference point and the ISU campus.         |
+| Car.Time.min  | Average journey duration of suggested routes between the reference point and the ISU campus. |
+| Walk.miles    | Average distance of suggested routes between the reference point and the ISU campus.         |
+| Walk.time.min | Average journey duration of suggested routes between the reference point and the ISU campus. |
+| Bus.time.min  | Average journey duration of suggested routes between the reference point and the ISU campus. |
+
+
+
+```{r, message=FALSE, warning=FALSE}
+#Load treated and processed data
+New_Data <- read_csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Processed/New_Data.csv")
+
+#Load the data with distance between ISU and 
+distance <- read_csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Processed/distance.csv")
+
+#Add the distance data to both Train and Test datasets.
+d_train <- left_join(New_Data, distance, by = "Neighborhood")
+
+```
+
+##OLS Model
+
+First we ran a naive OLS model including only the variables of interest in the model. The model had statistical significance with an F-statistic of 26.33 and R^{2} of 0.1097. Our variables of interest were statistically significant at the 0.05 level with the exception of Car.Miles. In model 2 we included the "Overall Quality" variable and our results improved significantly resulting in a R^{2} of 0.6537 and an F-statistic of 335.7 . Lastly, Model 3 included 86 all variables in the model,the mechanics behind the OLS regression automatically leads to a higher R^{2} (0.94) but the overall strength of the model was not acceptable (F-statistic of 40.4). Table X compares the coefficients to all the three models.
+
+
+```{r Naive Model, message=FALSE, warning=FALSE}
+#d_train1 <- d_train[,-c(73, 75, 7, 74, 57,4, 13, 83,84)]
+d_train_noNAs <- na.omit(d_train)
+
+#OLS Model 1 - very naive considering only the variab
+
+naive.model <- lm(SalePrice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min, data = d_train_noNAs)
+summary(naive.model)
+```
+
+
+```{r message=FALSE, warning=FALSE}
+
+#Eliminate variables with highest number of NAs
+# Num. | Variable | NAs
+# 73 -   PoolQC   | 1453
+# 75 - MiscFeature| 1406
+# 7 -       Alley | 1369
+# 74 -      Fence | 1179
+# 57 -FireplaceQu | 690
+# 4 - LotFrontage | 259
+
+##Remove character variables as well
+
+m1.train <- lm(SalePrice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min + OverallQual, data = d_train_noNAs)
+summary(m1.train)
+
+anova(naive.model, m1.train)
+```
+
+```{r}
+m2.train <- lm(SalePrice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min + ., data = d_train_noNAs)
+
+#Show only relevant coefficients
+a2Pval <- summary(m2.train)$coefficients[2:6, 1:4]
+
+a2Pval
+```
+
+###Results
+
+
+| Coefficients  |            |      |          |      |
+|---------------|------------|------|----------|------|
+|               | Model 1    | Model 2    | Model 3   |
+| Car.miles     | -24642.    | -13443.9   | -92710    |
+| Car.Time.min  | 2955.2     | -4864.6**  | -4381     |
+| Walk.miles    | 71320.1*   | 103858.8***| -39210    |
+| Walk.time.min | -3111.3*   | -3734.8*** | 8364      |
+| Bus.time.min  | 3467.4***  | 397.6 .    | -1806 **  |
+| OverallQual   | -  -  -  - | 46999.1*** | 6464***   |
+
+
+##Lasso
+
+The Lasso function will help us select the variables with the highest predictive power on Sales Price. It might also give us a clearer picture that will help us better assess our hypothesis.
+
+
+Each curve corresponds to a variable. It shows the path of its coefficient against the ℓ1-norm of the whole coefficient vector at as λ varies. The axis above indicates the number of nonzero coefficients at the current λ, which is the effective degrees of freedom (df) for the lasso. Users may also wish to annotate the curves; this can be done by setting label = TRUE in the plot command.
+
+
+```{r}
+set.seed(12345) # = Seed for replication
+
+x <- model.matrix(log_saleprice ~ ., data = d_train_noNAs)[,-75]
+y <- d_train_noNAs$log_saleprice
+ 
+### We then fit a Lasso regression model (alpha = 1)
+fit.lasso <- glmnet(x, y, alpha = 1, family = "gaussian")
+plot(fit.lasso, xvar = "lambda", label = TRUE)
+ 
+### Now we cross-validate
+cv.lasso <- cv.glmnet(x, y)
+
+cv.lasso$lambda.min 
+cv.lasso$lambda.1se
+
+#coef(cv.lasso, s = "lambda.min")
+```
+
+
+Cross-Validation plot suggests that the model works best when it has approximately 43 predictors. Although we still have many predictors, lasso helped to reduce the number of variables by over 53%. We can use cross-validation to extract coefficients that collectively minimize mean squared error.
+ 
+It includes the cross-validation curve (red dotted line), and upper and lower standard deviation curves along the λ sequence (error bars). Two selected λ’s are indicated by the vertical dotted lines (see below).
+
+We can view the selected λ’s and the corresponding coefficients. For example,
+
+lambda.min is the value of λ that gives minimum mean cross-validated error. The other λ saved is  lambda.1se, which gives the most regularized model such that error is within one standard error of the minimum.
+
+```{r}
+plot(cv.lasso)
+```
+ 
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+set.seed(12345) # = Seed for replication
+
+### Extract coefficients corresponding to lambda.min (minimum mean cross-validated error)
+min.coef <- coef(cv.lasso, s = "lambda.min")
+
+#print(as.matrix(min.coef))
+
+```
+
+| #  | Variable           | Result    |
+|----|--------------------|-----------|
+| RoofMatlWdShngl    | -5.35E-02 |
+| MSZoningRM         | -5.01E-02 |
+| FireplaceQuPo      | -3.93E-02 |
+| PavedDriveP        | -2.94E-02 |
+| GarageTypeDetchd   | -2.13E-02 |
+| BsmtFinType2BLQ    | -2.03E-02 |
+| KitchenQualTA      | -1.69E-02 |
+| GarageFinishUnf    | -6.28E-03 |
+| Exterior1stHdBoard | -5.51E-03 |
+| BsmtQualTA         | -4.63E-03 |
+| Exterior1stWdShing | -3.04E-03 |
+| HeatingQCTA        | -1.37E-03 |
+| HouseStyle1.5Unf   | -2.22E-04 |
+| PoolArea           | -7.25E-05 |
+| LotArea            | 4.19E-07  |
+| SalePrice          | 3.14E-06  |
+| GrLivArea          | 4.34E-06  |
+| WoodDeckSF         | 5.39E-06  |
+| ScreenPorch        | 2.44E-05  |
+| OpenPorchSF        | 5.49E-05  |
+| YearRemodAdd       | 4.87E-04  |
+| BsmtFinType2LwQ    | 1.24E-03  |
+| MoSold             | 1.47E-03  |
+| BsmtFullBath       | 3.67E-03  |
+| CentralAirY        | 4.04E-03  |
+| GarageTypeAttchd   | 4.14E-03  |
+| TotRmsAbvGrd       | 4.79E-03  |
+| BsmtQualGd         | 6.01E-03  |
+| LandContourLow     | 6.71E-03  |
+| OverallCond        | 9.10E-03  |
+| KitchenQualGd      | 1.27E-02  |
+| OverallQual        | 1.63E-02  |
+| LandSlopeMod       | 2.04E-02  |
+| Exterior1stBrkFace | 2.16E-02  |
+| GarageCars         | 2.85E-02  |
+| ExterQualGd        | 3.35E-02  |
+
+
+##New OLS
+
+Our new model with only 18 variables (instead of all variables) has an adjusted R-squared of 0.73 - a significant result in comparison to an adjusted R-square of .96 but including all 80 variables!). In this adapted model, our variables of interest (Car.miles, Car.Time.min, Walk.miles, Walk.time.min, Bus.time.min) have a very small coefficient and all of them (except for Car.miles) are statistically significant at the 0.05 level).
+
+
+```{r}
+m4.train <- lm(SalePrice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min + PoolArea + LotArea + GrLivArea + WoodDeckSF + ScreenPorch + OpenPorchSF + YearRemodAdd + MoSold + BsmtFullBath +TotRmsAbvGrd + OverallCond + OverallQual + GarageCars
+, data = d_train_noNAs)
+summary(m4.train)
+
+m5.train <- lm(log_saleprice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min + PoolArea + LotArea + GrLivArea + WoodDeckSF + ScreenPorch + OpenPorchSF + YearRemodAdd + MoSold + BsmtFullBath +TotRmsAbvGrd + OverallCond + OverallQual + GarageCars
+, data = d_train_noNAs)
+
+
+summary(m5.train)
+```
+
+##Results
+
+<center>
+
+`Coefficients of Interest from the Improved Model`
+
+
+|VARIABLES      | OLS Coeff    | Association |
+|---------------|--------------|-------------|
+| Car.miles     | -$5.491      | Negative    |
+| Car.Time.min  | -$4.567      | Negative    |
+| Walk.miles    |  $8.734      | Positive    |
+| Walk.time.min | -$3.164      | Negative    |
+| Bus.time.min  | -$6.106      | Negative    |
+
+</center>
+
+These results go against the initial hypothesis that there is a positive association between final sales price and distance from ISU. In fact, they reveal the opposite, on average, each additional mile away from campus is associated with a price drop of approximately $5,491 in the final sales price. 
