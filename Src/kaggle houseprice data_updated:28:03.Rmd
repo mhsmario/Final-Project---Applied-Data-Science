@@ -77,9 +77,15 @@ library(pander)
 
 all <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Raw//train.csv")
 
+set.seed(12345)
+in_train <- createDataPartition(y = all$SalePrice, p = 3 / 4, list = FALSE)
+str(in_train)
+training <- all[ in_train, ] # three fourth of data go to training
+testing  <- all[-in_train, ]
 
-
+all <- rbind(training, testing)
 ```
+
 
 ##There are 1460 instances of training data and 1460 of test data. Total number of attributes equals 81, of which 36 is quantitative, 43 categorical + Id and SalePrice.##
 
@@ -169,7 +175,7 @@ all <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/
 
 `Qualitative`: Alley, BldgType, BsmtCond, BsmtExposure, BsmtFinType1, BsmtFinType2, BsmtQual, CentralAir, Condition1, Condition2, Electrical, ExterCond, ExterQual, Exterior1st, Exterior2nd, Fence, FireplaceQu, Foundation, Functional, GarageCond, GarageFinish, GarageQual, GarageType, Heating, HeatingQC, HouseStyle, KitchenQual, LandContour, LandSlope, LotConfig, LotShape, MSZoning, MasVnrType, MiscFeature, Neighborhood, PavedDrive, PoolQC, RoofMatl, RoofStyle, SaleCondition, SaleType, Street, Utilities.
 
-```{R, EDA}
+```{r, eda}
 
 hist(all$SalePrice, breaks=seq(30000, 760000, 500),prob=TRUE )
 lines(density(all$SalePrice), col="blue", lwd=2)       
@@ -253,7 +259,7 @@ all[c(524, 1299, 692, 1183), c('SalePrice', 'GrLivArea', 'OverallQual','GarageCa
 ```
 
 ##Explore missing values
-### Version A (Under construction) 
+ 
 ```{r, warning=FALSE, message=FALSE}
 na_count <-sapply(all, function(y) sum(length(which(is.na(y)))))
 na_count <- data.frame(na_count)
@@ -338,10 +344,8 @@ BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/B
        Mn	Mimimum Exposure
        No	No Exposure
        NA	No Basement
-       
 
-#MasVnrType (Masonry veneer type) and LotFrontage (Linear feet of street connected to property) should not have NA in priciple.  
-
+# Dealing with NA
 ```{r, PoolQC}
 all_test <- all
 levels(all_test$PoolQC)
@@ -360,7 +364,7 @@ all_test$PoolQC <- ifelse(is.na(all$PoolQC), "None", paste(all$PoolQC))
 
 Qualities <- c('None' = 0, 'Po' = 1, 'Fa' = 2, 'TA' = 3, 'Gd' = 4, 'Ex' = 5)
 all_test$PoolQC<- revalue(all_test$PoolQC, Qualities)
-table(all_test$PoolQC)
+all_test$PoolQC <- as.factor(all_test$PoolQC)
 ```
 
 ```{r, MiscFeature}
@@ -468,9 +472,6 @@ all$Condition1 <- as.factor(all$Condition1)
 all$Condition2 <- as.factor(all$Condition2)
 all$GarageArea <- as.numeric(all$GarageArea)
 
-all$MoSold <- as.factor(all$MoSold)
-all$MSSubClass <- as.factor(all$MSSubClass)
-
 na_count_test <-sapply(all, function(y) sum(length(which(is.na(y)))))
 na_count_test <- data.frame(na_count_test)
 
@@ -557,6 +558,18 @@ cor_numVar <- cor_numVar[CorHigh, CorHigh]
 
 corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt", tl.cex = 0.7,cl.cex = .7, number.cex=.7)
 ```
+Since there are several paris of varibles are highly correlated to each other, we can simply drop one of them.
+Therefore, I chose to drop 'TotalRmsAbvGrd'(vs GrLivArea); 'GarageArea'(vs GarageCars); 'TotalBsmtSF' (vs X1stFkrSF); 'YearRemodAdd'(vs YearBiult)
+
+```{r drop variables and outliers}
+dropVars <- c('YearRemodAdd', 'GarageArea', 'TotalBsmtSF', 'TotalRmsAbvGrd')
+
+train <- train[,!(names(train) %in% dropVars)]
+
+train <- train[-c(524, 1299, 2550),]
+write_csv(train, 'Final_data.csv')
+```
+
 
 ```{r neighborhood}
 
@@ -576,35 +589,43 @@ ggplot(data=train, aes(x=Neighborhood)) +
         theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-```{r split data}
-set.seed(12345)
-in_train <- createDataPartition(y = train$SalePrice, p = 3 / 4, list = FALSE)
-str(in_train)
-training <- train[ in_train, ] # three fourth of data go to training
-testing  <- train[-in_train, ]
-```
 
-#Principal Component Analysis
+#```{r remove extra levels}
+namefactor <- which(sapply(train, is.factor))
+DFfactors <- train[, !(names(train) %in% namefactor)]
+DFfactors <- DFfactors[, names(DFfactors) != 'SalePrice']
+DFdummies <- as.data.frame(model.matrix(~.-1, DFfactors))
+dim(DFdummies)
 
+ZerocolTest <- which(colSums(DFdummies[1092:1447,])==0)
+colnames(DFdummies[ZerocolTest])
+DFdummies <- DFdummies[,-ZerocolTest]
+
+ZerocolTrain <- which(colSums(DFdummies[1:1091,])==0)
+colnames(DFdummies[ZerocolTrain])
+DFdummies <- DFdummies[,-ZerocolTrain] 
+#```
+
+#Modeling
 
 We do PCA to better understand the main patterns in our data across the whole time period: how the companies differ regarding their financial and ESG score attributes. 
 We find an interesting relationship between the Environmental ESG score and financial performance indicators, and see that 2 principal components already explain 40% of the variance.
 
-```{r lasso}
+#```{r lasso}
+train1 <- train[1:1092,]
+test1 <- train[1092:1447,]
 
 library(lars)
-ols <- lm(SalePrice ~ . - SalePrice, data = training)
-
-
-X <- model.matrix(ols)[ ,-79]
-y <- training$SalePrice
+ols <- lm(SalePrice ~ . - SalePrice, data = train1)
+X <- model.matrix(ols)[ ,-76]
+y <- train1$SalePrice
 lasso <- lars(X, y, type = "lasso", trace = FALSE)
 
-test_X <- model.matrix(ols, data = testing)[ ,-79]
+test_X <- model.matrix(ols, data = test1)[ ,-76]
 yhat_lasso <- predict(lasso, newx = test_X)$fit
-SSE_lasso <- colMeans( (testing$SalePrice - yhat_lasso) ^ 2 )
+SSE_lasso <- colMeans( (test1$SalePrice - yhat_lasso) ^ 2 )
 min(SSE_lasso) 
 which(coef(lasso, s = which.min(SSE_lasso)) == 0)
-```
+#```
 
 
