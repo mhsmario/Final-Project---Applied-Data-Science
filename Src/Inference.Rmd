@@ -2,48 +2,47 @@
 title: "Final Project - Inference"
 author: "Mario Saraiva"
 date: "4/11/2018"
-output:
-  toc: yes
-  toc_float: yes
+output: html_document
+
 ---
 
 ```{r setup, include=FALSE}
 rm(list=ls())
 
-#install.packages(c("knitr" ,"purrr", "tidyr", "ggplot2", "readr", "dplyr", "corrplot", "RColorBrewer", "shiny", "ggfortify", "pander"))
-library(glmnet)
-library(purrr)
-library(tidyr)
-library(readr)
-library(corrplot)
-library(shiny)
-library(dplyr)
-library(ggplot2)
-library(e1071)
-library(glmnet)
-library(mice)
-library(lattice)
-library(VIM)
-library(caret)
-library(stargazer)
-library(gam)
-library(flam)
+#install.packages(c("knitr" ,"purrr", "tidyr", "ggplot2", "readr", "dplyr", "corrplot", "RColorBrewer", "shiny", "ggfortify", "pander","here","glmnet"))
+
+# library(glmnet)
+# library(purrr)
+# library(tidyr)
+# library(corrplot)
+# library(shiny)
+# library(dplyr)
+# library(ggplot2)
+# library(e1071)
+ library(glmnet)
+# library(mice)
+# library(lattice)
+# library(VIM)
+# library(caret)
+# library(stargazer)
+# library(gam)
+# library(flam)
 #options(java.parameters = "-Xmx5g") #useful when bartmachine breaks because of Java on IOS
-library(bartMachine)
-library(tree)
-library(ISLR)
-library(RColorBrewer)
-library(ggfortify)
-library(scales)
-library(stargazer)
-library(rsconnect)
-library(knitr)
-library(gridExtra)
-library(scales)
-library(Rmisc)
-library(ggrepel)
-library(randomForest)
-library(psych)
+# library(bartMachine)
+# library(tree)
+# library(ISLR)
+# library(RColorBrewer)
+# library(ggfortify)
+# library(scales)
+# library(stargazer)
+# library(rsconnect)
+# library(knitr)
+# library(gridExtra)
+# library(scales)
+# library(Rmisc)
+# library(ggrepel)
+# library(randomForest)
+# library(psych)
 library(purrr)
 library(tidyr)
 library(ggplot2)
@@ -54,6 +53,7 @@ library(RColorBrewer)
 library(shiny)
 library(ggfortify)
 library(pander)
+library(here)
 ```
 
 #Section III - Inference
@@ -78,12 +78,16 @@ The city of Ames is a college city, with approximately 35,993 students (exluding
 
 We hypothesize that there is a positive association between final sales price and distance from ISU. In other words, houses that are further away from the university are, in general, sold for a higher price than those in neighborhoods closer to ISU. Without doing any data analysis, we know that there is a golf course at the opposite end of city from the University, which could be evidence supporting our hypothesis. Additionally, student housing usually has a lower price in comparison with other non-student houses, if this is true in Ames, then our hypothesis should be correct.
 
-`Hypothesis: $Sales Price = \beta_0 + \beta_{Dist. ISU} + \beta_{House Quality} + \beta_{Size} + ... + \mu$ `
-
+<center>
+Hypothesis: $Sales Price = \beta_0 + \beta_{Dist. ISU} + \beta_{House Quality} + \beta_{Size} + ... + \mu$
+</center>
+  
 
 Our dataset does not have the exact location of each house, so we used the average distance between the approximate center point of each neighborhood to the center of IUS campus. We used google maps to calculate the distance in miles by car and walking, as well as, the time it would take to go from the location to the IUS campus. Since the campus is fairly large we used Global Café, 513 Farm House Ln, Ames, IA, 50010, as our reference point representing the University.
 
+<center>
 `New variables`
+
 | Variable      | Description                                                                                  |
 |---------------|----------------------------------------------------------------------------------------------|
 | Neighborhood  | The name of the neighborhood from the original data.                                         |
@@ -95,18 +99,59 @@ Our dataset does not have the exact location of each house, so we used the avera
 | Walk.time.min | Average journey duration of suggested routes between the reference point and the ISU campus. |
 | Bus.time.min  | Average journey duration of suggested routes between the reference point and the ISU campus. |
 
+</center>
 
+
+```{r}
+#Relative path using here package.
+# 
+# set_here("C:/Users/mhs2195/Downloads/Final-Project---Applied-Data-Science-master/Final-Project---Applied-Data-Science-master")
+```
 
 ```{r, message=FALSE, warning=FALSE}
 #Load treated and processed data
-New_Data <- read_csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Processed/New_Data.csv")
+New_Data <- read_csv("New_Data.csv")
 
-#Load the data with distance between ISU and 
-distance <- read_csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Processed/distance.csv")
+#Load the data with distance between ISU and
+
+distance <- read_csv("C:/Users/mhs2195/Downloads/Final-Project---Applied-Data-Science-master/Final-Project---Applied-Data-Science-master/Data/Processed/distance.csv")
 
 #Add the distance data to both Train and Test datasets.
 d_train <- left_join(New_Data, distance, by = "Neighborhood")
 
+```
+
+##This might be in the wrong section (?)
+```{r}
+#d_train1 <- d_train[,-c(73, 75, 7, 74, 57,4, 13, 83,84)]
+
+d_train_noNAs <- na.omit(d_train)
+
+df <- data.frame(tapply(d_train_noNAs$SalePrice, d_train_noNAs$Neighborhood, mean))
+
+library(data.table)
+library(forcats)
+
+neighb <- setDT(df, keep.rownames = TRUE)[]
+colnames(neighb)[2] <- "mean.price"
+
+#Order values in ascending order.
+neighb <- neighb[order(mean.price), ]
+neighb$rn <- factor(neighb$rn, levels=unique(as.character(neighb$rn)) )
+
+#plot the results
+ggplot(neighb) + geom_col(aes(neighb$rn, y = neighb$mean.price,  fill = df$rn)) + 
+  coord_flip() + 
+  ggtitle("Average Sales Price by Neighborhood") +
+  ylab("Average Sales Price") + scale_y_continuous(labels = scales::dollar) +
+  xlab("Neighborhood") + coord_flip()
+  
+#Create categories for mean sales price of the neighborhood.
+  
+d_train_noNAs$Mean.price <- cut(d_train_noNAs$SalePrice, breaks = c(100,200000,300000, Inf), labels = c("Lower", "Median ", "Higher") )
+
+#Distribution of houses per neighborhood category
+table(d_train_noNAs$Neighborhood, d_train_noNAs$Mean.price)
 ```
 
 ##OLS Model
@@ -115,13 +160,21 @@ First we ran a naive OLS model including only the variables of interest in the m
 
 
 ```{r Naive Model, message=FALSE, warning=FALSE}
-#d_train1 <- d_train[,-c(73, 75, 7, 74, 57,4, 13, 83,84)]
-d_train_noNAs <- na.omit(d_train)
-
 #OLS Model 1 - very naive considering only the variab
-
-naive.model <- lm(SalePrice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min, data = d_train_noNAs)
+naive.model <- lm(SalePrice ~ Car.miles + OverallQual + OverallCond + Mean.price  , data = d_train_noNAs)
 summary(naive.model)
+
+naive.model0 <- lm(SalePrice ~ Car.Time.min + OverallQual +OverallCond + Mean.price  , data = d_train_noNAs)
+summary(naive.model0)
+
+naive.model1 <- lm(SalePrice ~ Walk.miles + OverallQual +OverallCond + Mean.price  , data = d_train_noNAs)
+summary(naive.model1)
+
+naive.model1.1 <- lm(SalePrice ~ Walk.time.min + OverallQual +OverallCond + Mean.price  , data = d_train_noNAs)
+summary(naive.model1.1)
+
+naive.model2 <- lm(SalePrice ~ Bus.time.min + OverallQual +OverallCond + Mean.price  , data = d_train_noNAs)
+summary(naive.model2)
 ```
 
 
@@ -137,11 +190,6 @@ summary(naive.model)
 # 4 - LotFrontage | 259
 
 ##Remove character variables as well
-
-m1.train <- lm(SalePrice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min + OverallQual, data = d_train_noNAs)
-summary(m1.train)
-
-anova(naive.model, m1.train)
 ```
 
 ```{r}
@@ -156,8 +204,8 @@ a2Pval
 ###Results
 
 
-| Coefficients  |            |      |          |      |
-|---------------|------------|------|----------|------|
+| Coefficients  |            |            |           |
+|---------------|------------|------------|-----------|
 |               | Model 1    | Model 2    | Model 3   |
 | Car.miles     | -24642.    | -13443.9   | -92710    |
 | Car.Time.min  | 2955.2     | -4864.6**  | -4381     |
@@ -178,8 +226,10 @@ Each curve corresponds to a variable. It shows the path of its coefficient again
 ```{r}
 set.seed(12345) # = Seed for replication
 
-x <- model.matrix(log_saleprice ~ ., data = d_train_noNAs)[,-75]
-y <- d_train_noNAs$log_saleprice
+#d_train_noNAs <- na.omit(d_train)
+
+x <- model.matrix(SalePrice ~ ., data = d_train_noNAs)[ ,-79]
+y <- d_train_noNAs$SalePrice
  
 ### We then fit a Lasso regression model (alpha = 1)
 fit.lasso <- glmnet(x, y, alpha = 1, family = "gaussian")
@@ -211,50 +261,33 @@ plot(cv.lasso)
 set.seed(12345) # = Seed for replication
 
 ### Extract coefficients corresponding to lambda.min (minimum mean cross-validated error)
-min.coef <- coef(cv.lasso, s = "lambda.min")
+myCoefs <- coef(cv.lasso, s = "lambda.min")
 
-#print(as.matrix(min.coef))
+# print(as.matrix(min.coef))
+
+myLasso.Results <- data.frame(
+  features = myCoefs@Dimnames[[1]][ which(myCoefs != 0 ) ], #intercept included
+  coefs    = myCoefs              [ which(myCoefs != 0 ) ]  #intercept included
+)
+
+myLasso.Results <- myLasso.Results[-1,]
+myLasso.Results$level.coefs <- cut(myLasso.Results$coefs, 5, labels = c("lowest","low", "med", "high", "highest"))
+
+table(myLasso.Results$level.coefs)
+
+summary(myLasso.Results$coefs)
+
+ggplot(myLasso.Results) + geom_bar(aes(myLasso.Results$level.coefs, fill = myLasso.Results$level.coefs)) + coord_flip()
+
 
 ```
 
-| #  | Variable           | Result    |
-|----|--------------------|-----------|
-| RoofMatlWdShngl    | -5.35E-02 |
-| MSZoningRM         | -5.01E-02 |
-| FireplaceQuPo      | -3.93E-02 |
-| PavedDriveP        | -2.94E-02 |
-| GarageTypeDetchd   | -2.13E-02 |
-| BsmtFinType2BLQ    | -2.03E-02 |
-| KitchenQualTA      | -1.69E-02 |
-| GarageFinishUnf    | -6.28E-03 |
-| Exterior1stHdBoard | -5.51E-03 |
-| BsmtQualTA         | -4.63E-03 |
-| Exterior1stWdShing | -3.04E-03 |
-| HeatingQCTA        | -1.37E-03 |
-| HouseStyle1.5Unf   | -2.22E-04 |
-| PoolArea           | -7.25E-05 |
-| LotArea            | 4.19E-07  |
-| SalePrice          | 3.14E-06  |
-| GrLivArea          | 4.34E-06  |
-| WoodDeckSF         | 5.39E-06  |
-| ScreenPorch        | 2.44E-05  |
-| OpenPorchSF        | 5.49E-05  |
-| YearRemodAdd       | 4.87E-04  |
-| BsmtFinType2LwQ    | 1.24E-03  |
-| MoSold             | 1.47E-03  |
-| BsmtFullBath       | 3.67E-03  |
-| CentralAirY        | 4.04E-03  |
-| GarageTypeAttchd   | 4.14E-03  |
-| TotRmsAbvGrd       | 4.79E-03  |
-| BsmtQualGd         | 6.01E-03  |
-| LandContourLow     | 6.71E-03  |
-| OverallCond        | 9.10E-03  |
-| KitchenQualGd      | 1.27E-02  |
-| OverallQual        | 1.63E-02  |
-| LandSlopeMod       | 2.04E-02  |
-| Exterior1stBrkFace | 2.16E-02  |
-| GarageCars         | 2.85E-02  |
-| ExterQualGd        | 3.35E-02  |
+```{r}
+pander(filter(myLasso.Results, level.coefs != "low" ))
+```
+
+The lasso resutls are very interesting. Out of the coefficients selected by Lasso 9 are strong predictors (their coefficients are further away from zero). 
+
 
 
 ##New OLS
@@ -263,15 +296,15 @@ Our new model with only 18 variables (instead of all variables) has an adjusted 
 
 
 ```{r}
-m4.train <- lm(SalePrice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min + PoolArea + LotArea + GrLivArea + WoodDeckSF + ScreenPorch + OpenPorchSF + YearRemodAdd + MoSold + BsmtFullBath +TotRmsAbvGrd + OverallCond + OverallQual + GarageCars
-, data = d_train_noNAs)
-summary(m4.train)
-
-m5.train <- lm(log_saleprice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min + PoolArea + LotArea + GrLivArea + WoodDeckSF + ScreenPorch + OpenPorchSF + YearRemodAdd + MoSold + BsmtFullBath +TotRmsAbvGrd + OverallCond + OverallQual + GarageCars
-, data = d_train_noNAs)
-
-
-summary(m5.train)
+# m4.train <- lm(SalePrice ~ Car.miles + PoolArea + LotArea + GrLivArea + WoodDeckSF + ScreenPorch + OpenPorchSF + YearRemodAdd + MoSold + BsmtFullBath +TotRmsAbvGrd + OverallCond + OverallQual + GarageCars
+# , data = d_train_noNAs)
+# summary(m4.train)
+# 
+# m5.train <- lm(log_saleprice ~ Car.miles + Car.Time.min + Walk.miles + Walk.time.min + Bus.time.min + PoolArea + LotArea + GrLivArea + WoodDeckSF + ScreenPorch + OpenPorchSF + YearRemodAdd + MoSold + BsmtFullBath +TotRmsAbvGrd + OverallCond + OverallQual + GarageCars
+# , data = d_train_noNAs)
+# 
+# 
+# summary(m5.train)
 ```
 
 ##Results
