@@ -570,6 +570,19 @@ train <- train[-c(524, 1299, 2550),]
 write_csv(train, 'Final_data.csv')
 ```
 
+```{r rf again}
+numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
+factorVars <- which(sapply(train, is.factor)) #index vector factor variables
+cat('There are', length(numericVars), 'numeric variables, and', length(factorVars), 'categoric variables')
+
+set.seed(123)
+quick_RF <- randomForest(x=train[, -76], y=train$SalePrice, ntree=200,importance=TRUE)
+imp_RF <- importance(quick_RF)
+imp_DF <- data.frame(Variables = row.names(imp_RF), MSE = imp_RF[,1])
+imp_DF <- imp_DF[order(imp_DF$MSE, decreasing = TRUE),]
+
+ggplot(imp_DF[1:20,], aes(x=reorder(Variables, MSE), y=MSE, fill=MSE)) + geom_bar(stat = 'identity') + labs(x = 'Variables', y= '% increase MSE if variable is randomly permuted') + coord_flip() + theme(legend.position="none")
+```
 
 ```{r neighborhood}
 
@@ -607,25 +620,92 @@ DFdummies <- DFdummies[,-ZerocolTrain]
 #```
 
 #Modeling
-
-We do PCA to better understand the main patterns in our data across the whole time period: how the companies differ regarding their financial and ESG score attributes. 
-We find an interesting relationship between the Environmental ESG score and financial performance indicators, and see that 2 principal components already explain 40% of the variance.
-
-#```{r lasso}
+We pick variables that increase MSE if variable is randomly permuted greater than 10% (exclude two variables which are X1ndFlrSF and X2ndFlrSF which representing First/Second floor square feet, I think the information is included in GrLivArea) and run a ols model. The ols model has an (adjusted) R2 that is greater than 0.8
+```{r ols}
 train1 <- train[1:1092,]
 test1 <- train[1092:1447,]
 
+ols <- lm(SalePrice ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLivArea ,data = train1)
+summary(ols)$adj.r.squared
+```
+But I don't want to just make my conclusion base on the basis of (possibly flawed) intuition about how real estate prices work.
+Thus, I start with a model that includes all available predictors, an interaction between OverallQual and YearBuilt (because the quality of Older houses may not as good as the new ones).
+```{r step function}
+ # step function
+train1 <- subset(train1, select = -c(Utilities,Street))
+test1 <- subset(test1, select = -c(Utilities,Street))
+test1 <- test1[-c(242),]
+test1 <- test1[-c(306),]
+test1 <- test1[-c(102,240),]
+test1 <- test1[-c(102,74),]
+test1 <- test1[-c(276),]
+test1 <- test1[-c(66),]
+
+ols <- lm(SalePrice ~ . + OverallQual*YearBuilt - SalePrice,
+           data = train1)
+ols_AIC <- step(ols, trace = FALSE)
+setdiff(names(coef(ols)), names(coef(ols_AIC)))
+
+yhat_AIC <- predict(ols_AIC, newdata = test1)
+SSE_AIC <- mean( (test1$SalePrice - yhat_AIC) ^ 2 )
+SSE_AIC
+```
+
+
+```{r lasso}
 library(lars)
-ols <- lm(SalePrice ~ . - SalePrice, data = train1)
-X <- model.matrix(ols)[ ,-76]
+X <- model.matrix(ols)[ ,-1]
 y <- train1$SalePrice
 lasso <- lars(X, y, type = "lasso", trace = FALSE)
 
-test_X <- model.matrix(ols, data = test1)[ ,-76]
+test1 <- test1[-c(142),]
+test_X <- model.matrix(ols, data = test1)[ ,-1]
 yhat_lasso <- predict(lasso, newx = test_X)$fit
+dim(yhat_lasso)
+
 SSE_lasso <- colMeans( (test1$SalePrice - yhat_lasso) ^ 2 )
-min(SSE_lasso) 
-which(coef(lasso, s = which.min(SSE_lasso)) == 0)
-#```
+min(SSE_lasso)
+
+#Trying again with least-angle regression, it finds an equivalent model to be optimal
+lar <- lars(X, y, type = "lar", trace = FALSE)
+yhat_lar <- predict(lasso, newx = test_X)$fit
+dim(yhat_lar)
+
+SSE_lar <- colMeans( (test1$SalePrice - yhat_lar) ^ 2 )
+min(SSE_lar) == min(SSE_lasso) 
+
+#Trying again with the forward stagewise algorithm, it also finds an equivalent model to be optimal
+fs <- lars(X, y, type = "forward.stagewise", trace = FALSE)
+yhat_fs <- predict(lasso, newx = test_X)$fit
+dim(yhat_fs)
+SSE_fs <- colMeans( (test1$SalePrice - yhat_fs) ^ 2 )
+min(SSE_fs) == min(SSE_lasso)
 
 
+```
+ 
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+
+mod1_train <- lm(SalePrice ~ (.)^2 + OverallQual*YearBuilt - SalePrice, data = train1)
+# stepwise search gets rid of a lot of the interactions
+mod1_AIC <- step(mod1_train, trace = FALSE)
+names(coef(mod1_AIC))
+
+# Predicting the new model in the testing data set
+Yhat_mod1AIC <- predict(mod1_AIC, newdata = testing)
+
+# (Root) MSE
+mean( (testing$Outstate - Yhat_mod1AIC) ^ 2 )
+sqrt(mean( (testing$Outstate - Yhat_mod1AIC) ^ 2 ))
+
+```
+
+```{r bartmachine}
+library(bartMachine)
+bart <- bartMachine(X = train1[,-74], y = train1$SalePrice)
+
+```
+
+Next Steps:
+1)Time Series Analysis on Pricing
+2)Cluster Analysis on Neighborhood
