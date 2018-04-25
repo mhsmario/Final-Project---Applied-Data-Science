@@ -242,7 +242,7 @@ all[c(524, 1299, 2550), c('SalePrice', 'GrLivArea', 'OverallQual')]
 ## GarageCars
   
 The Size of garage shows a positive correlation with SalePrice from level 0-3 but fall at level 4 (non-linear correlation). It make sense because only big houses have large garage, and bigger house usually have higher SalePrice. Also for houses with a garage of capacity of 3 cars(level 3), there are several outliners with much higher SalePrice existing, it must be other factors affecting the outcome price. Something might happen for houses with level 4 garage that needed to explained.
-```{r, GarageCars}
+```{r}
 
 summary(all$GarageCars)
 ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(GarageCars), y=SalePrice))+
@@ -255,40 +255,6 @@ outlier2 <- all %>%
 
 outlier2$Id
 all[c(524, 1299, 692, 1183), c('SalePrice', 'GrLivArea', 'OverallQual','GarageCars')]
-
-```
-## BsmtFinSF1
-```{r, BsmtFinSF1}
-ggplot(data=all[!is.na(all$SalePrice),], aes(x=BsmtFinSF1, y=SalePrice))+
-        geom_point(col='black') + geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1))+
-        scale_x_continuous(limits = c(100 ,2500))
-
-```
-## Neighborhood
-```{r neighborhood}
-
-df <- data.frame(tapply(train$SalePrice, train$Neighborhood, mean))
-library(data.table)
-setDT(df, keep.rownames = TRUE)[]
-colnames(df) <- c('Neighborhood','Average SalePrice')
-
-ggplot(df, aes(x = Neighborhood, y= `Average SalePrice`)) + 
-  geom_col(aes(fill = df$Neighborhood))+
-  geom_hline(yintercept=mean(train$SalePrice), linetype="dashed", color = "red")+
-        theme(axis.text.x = element_text(angle = 45, hjust = 1))
-
-ggplot(data=train, aes(x=(Neighborhood))) +
-        geom_histogram(stat='count')+
-        geom_label(stat = "count", aes(label = ..count.., y = ..count..), size=3)+
-        theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
-
-##YearBuilt
-```{r, yearbuilt}
-
-ggplot(data=all[!is.na(all$SalePrice),], aes(x=YearBuilt, y=SalePrice))+
-        geom_point(col='black') + geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1))+
-        scale_x_continuous(limits = c(1860 ,2020))
 ```
 
 ##Explore missing values
@@ -604,7 +570,6 @@ write_csv(train, 'Final_data.csv')
 ```
 
 ```{r rf again}
-train <- read.csv('Final_data.csv')
 numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
 factorVars <- which(sapply(train, is.factor)) #index vector factor variables
 cat('There are', length(numericVars), 'numeric variables, and', length(factorVars), 'categoric variables')
@@ -618,26 +583,49 @@ imp_DF <- imp_DF[order(imp_DF$MSE, decreasing = TRUE),]
 ggplot(imp_DF[1:20,], aes(x=reorder(Variables, MSE), y=MSE, fill=MSE)) + geom_bar(stat = 'identity') + labs(x = 'Variables', y= '% increase MSE if variable is randomly permuted') + coord_flip() + theme(legend.position="none")
 ```
 
+```{r neighborhood}
+
+df <- data.frame(tapply(train$SalePrice, train$Neighborhood, mean))
+library(data.table)
+setDT(df, keep.rownames = TRUE)[]
+colnames(df) <- c('Neighborhood','Average SalePrice')
+
+ggplot(df, aes(x = Neighborhood, y= `Average SalePrice`)) + 
+  geom_col(aes(fill = df$Neighborhood))+
+  geom_hline(yintercept=median(train$SalePrice), linetype="dashed", color = "red")+
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplot(data=train, aes(x=Neighborhood)) +
+        geom_histogram(stat='count')+
+        geom_label(stat = "count", aes(label = ..count.., y = ..count..), size=3)+
+        theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
+#```{r remove extra levels}
+namefactor <- which(sapply(train, is.factor))
+DFfactors <- train[, !(names(train) %in% namefactor)]
+DFfactors <- DFfactors[, names(DFfactors) != 'SalePrice']
+DFdummies <- as.data.frame(model.matrix(~.-1, DFfactors))
+dim(DFdummies)
+
+ZerocolTest <- which(colSums(DFdummies[1092:1447,])==0)
+colnames(DFdummies[ZerocolTest])
+DFdummies <- DFdummies[,-ZerocolTest]
+
+ZerocolTrain <- which(colSums(DFdummies[1:1091,])==0)
+colnames(DFdummies[ZerocolTrain])
+DFdummies <- DFdummies[,-ZerocolTrain] 
+#```
+
 #Modeling
 We pick variables that increase MSE if variable is randomly permuted greater than 10% (exclude two variables which are X1ndFlrSF and X2ndFlrSF which representing First/Second floor square feet, I think the information is included in GrLivArea) and run a ols model. The ols model has an (adjusted) R2 that is greater than 0.8
 ```{r ols}
-
-train$Mean.price <- cut(train$SalePrice, breaks = c(100,200000,300000, Inf), labels = c("Lower", "Median ", "Higher") )
-a <- train%>%
-  filter(Mean.price == 'Higher')
-
 train1 <- train[1:1092,]
 test1 <- train[1092:1447,]
 
-ols <- lm(Mean.price ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLivArea + OverallQual*YearBuilt ,data = train1)
+ols <- lm(SalePrice ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLivArea ,data = train1)
 summary(ols)$adj.r.squared
-
-y_hat_ols <- predict(ols, newdata = test1)
-y_hat_ols
-summary(y_hat_ols)
-z_ols <- as.integer(y_hat_ols > 1)
-z_ols
-table(test1$Mean.price, z_ols)
 ```
 But I don't want to just make my conclusion base on the basis of (possibly flawed) intuition about how real estate prices work.
 Thus, I start with a model that includes all available predictors, an interaction between OverallQual and YearBuilt (because the quality of Older houses may not as good as the new ones).
@@ -653,85 +641,69 @@ test1 <- test1[!test1$Id == 1188,]
 test1 <- test1[!test1$Id == 411,]
 test1 <- test1[!test1$Id == 251,]
 test1 <- test1[!test1$Id == 596,]
+
+ols <- lm(SalePrice ~ . + OverallQual*YearBuilt - SalePrice,
+           data = train1)
+ols_AIC <- step(ols, trace = FALSE)
+setdiff(names(coef(ols)), names(coef(ols_AIC)))
+
+yhat_AIC <- predict(ols_AIC, newdata = test1)
+SSE_AIC <- mean( (test1$SalePrice - yhat_AIC) ^ 2 )
+SSE_AIC
 ```
 
-### Fitting Vector Generalized Linear Models
-```{r, Vector Generalized Linear Models}
-library(VGAM)
-# with interaction term
-fit_log <- vglm(Mean.price ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLivArea, family=multinomial, data=train1)
-# summarize the fit
-summary(fit_log)
 
-# make predictions
-probabilities <- predict(fit_log, newdata = test1, type="response")
-predictions <- apply(probabilities, 1, which.max)
-predictions[which(predictions=="Lower")] <- levels(test1$Mean.price)[1]
-predictions[which(predictions=="Median")] <- levels(test1$Mean.price)[2]
-predictions[which(predictions=="Higher")] <- levels(test1$Mean.price)[3]
+```{r lasso}
+library(lars)
+X <- model.matrix(ols)[ ,-1]
+y <- train1$SalePrice
+lasso <- lars(X, y, type = "lasso", trace = FALSE)
 
-# summarize accuracy
-tbl_log <- table(predictions, test1$Mean.price)
-tbl_log
-sum(diag(tbl_log))/sum(tbl_log)
+test_X <- model.matrix(ols, data = test1)[ ,-1]
+yhat_lasso <- predict(lasso, newx = test_X)$fit
+dim(yhat_lasso)
+
+SSE_lasso <- colMeans( (test1$SalePrice - yhat_lasso) ^ 2 )
+min(SSE_lasso)
+
+#Trying again with least-angle regression, it finds an equivalent model to be optimal
+lar <- lars(X, y, type = "lar", trace = FALSE)
+yhat_lar <- predict(lasso, newx = test_X)$fit
+dim(yhat_lar)
+
+SSE_lar <- colMeans( (test1$SalePrice - yhat_lar) ^ 2 )
+min(SSE_lar) == min(SSE_lasso) 
+
+#Trying again with the forward stagewise algorithm, it also finds an equivalent model to be optimal
+fs <- lars(X, y, type = "forward.stagewise", trace = FALSE)
+yhat_fs <- predict(lasso, newx = test_X)$fit
+dim(yhat_fs)
+SSE_fs <- colMeans( (test1$SalePrice - yhat_fs) ^ 2 )
+min(SSE_fs) == min(SSE_lasso)
+
+
+```
+ 
+```{r, warning=FALSE, message=FALSE, echo=FALSE}
+
+mod1_train <- lm(SalePrice ~ (.)^2 + OverallQual*YearBuilt - SalePrice, data = train1)
+# stepwise search gets rid of a lot of the interactions
+mod1_AIC <- step(mod1_train, trace = FALSE)
+names(coef(mod1_AIC))
+
+# Predicting the new model in the testing data set
+Yhat_mod1AIC <- predict(mod1_AIC, newdata = testing)
+
+# (Root) MSE
+mean( (testing$Outstate - Yhat_mod1AIC) ^ 2 )
+sqrt(mean( (testing$Outstate - Yhat_mod1AIC) ^ 2 ))
+
 ```
 
-### Fitting Linear Discriminant Analysis Models
-```{r lda}
-library(MASS)
-LDA <- lda(Mean.price ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLivArea,data = train1)
-
-y_hat_LDA <- predict(LDA, newdata = test1)
-summary(y_hat_LDA$posterior)
-z_LDA <- y_hat_LDA$class
-tbl_LDA <- table(test1$Mean.price, z_LDA)
-tbl_LDA
-sum(diag(tbl_LDA))/sum(tbl_LDA)
-```
-
-### Fitting Support Vector Machine Models
-```{r svm}
-library(e1071)
-
-classifier = svm(formula = Mean.price ~ . ,data = train1[,-74] ,
-                 type = 'C-classification',
-                 kernel = 'linear')
-help("svm")
-# Predicting the Test set results
-y_pred = predict(classifier, newdata = test1[,-c(74,75)])
-
-# Making the Confusion Matrix
-cm = table(test1[,75], y_pred)
-cm
-sum(diag(cm))/sum(cm)
-```
-
-### Fitting Decision Tree Model
-```{r, decision tree model}
-library(rpart)
-dt_classifier = rpart(formula = Mean.price ~ . ,data = train1[,-74])
-
-# Predicting the Test set results
-y_pred = predict(dt_classifier, newdata = test1[,-c(74,75)], type = 'class')
-
-# Making the Confusion Matrix
-dt_cm = table(newdata = test1[,75], y_pred)
-dt_cm
-sum(diag(dt_cm))/sum(dt_cm)
-```
-
-### Fitting Random Forest Model
-```{r rf predict}
-
-RF <- randomForest(x=train1[, (names(train1) %in% c("OverallQual","BsmtFinSF1","GarageCars",'Neighborhood','GrLivArea'))], y=train1$Mean.price, ntree=150,importance=TRUE)
-y_pred = predict(RF, newdata = test1[-c(74,75)])
-
-# Making the Confusion Matrix
-rf_cm = table(test1[,75], y_pred)
-rf_cm
-sum(diag(rf_cm))/sum(rf_cm)
+```{r rf again2}
+RF <- randomForest(x=train1[, -74], y=train1$SalePrice, ntree=500,importance=TRUE)
+RF
 plot(RF)
-
 ```
 
 Next Steps:
