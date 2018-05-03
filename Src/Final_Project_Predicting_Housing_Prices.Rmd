@@ -1,5 +1,5 @@
 ---
-title: "Kaggle: Predicting Housing Prices"
+title: "QMSS5069 - Advanced Data Science Final Project: Predicting Housing Prices"
 author: "Lizhizi Cui (lc3268) and Mario Saraiva (mhs2195)"
 date: "3/28/2018"
 output: 
@@ -224,67 +224,9 @@ BsmtCond | 37
 BsmtFinType1 | 37
 MasVnrType | 8
 
-PoolQC: Pool quality
-		
-       Ex	Excellent
-       Gd	Good
-       TA	Average/Typical
-       Fa	Fair
-       NA	No Pool
-       
-MiscFeature: Miscellaneous feature not covered in other categories
-		
-       Elev	Elevator
-       Gar2	2nd Garage (if not described in garage section)
-       Othr	Other
-       Shed	Shed (over 100 SF)
-       TenC	Tennis Court
-       NA	None
-       
-Alley: Type of alley access to property
-
-       Grvl	Gravel
-       Pave	Paved
-       NA 	No alley access     
-       
-Fence: Fence quality
-		
-       GdPrv	Good Privacy
-       MnPrv	Minimum Privacy
-       GdWo	Good Wood
-       MnWw	Minimum Wood/Wire
-       NA	No Fence     
-       
-FireplaceQu: Fireplace quality
-
-       Ex	Excellent - Exceptional Masonry Fireplace
-       Gd	Good - Masonry Fireplace in main level
-       TA	Average - Prefabricated Fireplace in main living area or Masonry Fireplace in basement
-       Fa	Fair - Prefabricated Fireplace in basement
-       Po	Poor - Ben Franklin Stove
-       NA	No Fireplace   
-       
-GarageType: Garage location (**smae for GarageYrBlt/GarageFinish/GarageCars/GarageArea/GarageQual/GarageCond)
-		
-       2Types	More than one type of garage
-       Attchd	Attached to home
-       Basment	Basement Garage
-       BuiltIn	Built-In (Garage part of house - typically has room above garage)
-       CarPort	Car Port
-       Detchd	Detached from home
-       NA	No Garage    
-       
-BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/BsmtFinSF1/BsmtFinType2/BsmtFinSF2/BsmtUnfSF/BsmtQual)
-
-       Gd	Good Exposure
-       Av	Average Exposure (split levels or foyers typically score average or above)	
-       Mn	Mimimum Exposure
-       No	No Exposure
-       NA	No Basement
-
 ### 1.2 Dealing with NA
-Created a new data file containing 1451 observations and 79 variables after removing missing values.
-```{r, PoolQC}
+Different types of missing values found. We modified them separately and then created a new data file containing 1451 observations and 79 variables after removing missing values.
+```{r}
 all_test <- all
 levels(all_test$PoolQC)
 
@@ -305,21 +247,18 @@ all_test$PoolQC<- revalue(all_test$PoolQC, Qualities)
 all_test$PoolQC <- as.factor(all_test$PoolQC)
 ```
 
-```{r, MiscFeature}
+```{r}
 all_test$MiscFeature <- addLevel(all_test$MiscFeature, "None")
 all_test$MiscFeature <- ifelse(is.na(all_test$MiscFeature), "None", paste(all_test$MiscFeature))
 all_test$MiscFeature <- as.factor(all_test$MiscFeature)
-table(all_test$MiscFeature)
                                                                                             
 all_test$Alley <- addLevel(all_test$Alley, "None")
 all_test$Alley <- ifelse(is.na(all_test$Alley), "None", paste(all$Alley))
 all_test$Alley <- as.factor(all_test$Alley)
-table(all_test$Alley)
 
 all_test$Fence <- addLevel(all_test$Fence, "None")
 all_test$Fence <- ifelse(is.na(all$Fence), "None", paste(all_test$Fence))
 all_test$Fence <- as.factor(all_test$Fence)
-table(all_test$Fence)
 
 all_test$FireplaceQu <- addLevel(all_test$FireplaceQu, "None")
 all_test$FireplaceQu <- ifelse(!is.na(all_test$FireplaceQu), paste(all_test$FireplaceQu), "None")
@@ -330,8 +269,6 @@ all_test$FireplaceQu <- as.factor(all_test$FireplaceQu)
 all_test$GarageType <- addLevel(all_test$GarageType, "None")
 all_test$GarageType <- ifelse(is.na(all_test$GarageType), "None", paste(all_test$GarageType))
 all_test$GarageType <- as.factor(all_test$GarageType)
-table(all_test$GarageType)
-
 
 all_test$GarageYrBlt[is.na(all_test$GarageYrBlt)] <- 'No Garage'
 all$GarageYrBlt <- as.numeric(all$GarageYrBlt)
@@ -339,56 +276,49 @@ all$GarageYrBlt <- as.numeric(all$GarageYrBlt)
 all_test$GarageFinish <- addLevel(all_test$GarageFinish, "None")
 all_test$GarageFinish <- ifelse(is.na(all_test$GarageFinish), "None", paste(all_test$GarageFinish))
 all_test$GarageFinish <- as.factor(all_test$GarageFinish)
-table(all_test$GarageFinish)
 
 all_test$GarageCars[is.na(all_test$GarageCars)] <- 'No Garage'
 all_test$GarageCars <- as.factor(all_test$GarageCars)
-table(all_test$GarageCars)
 
 all_test$GarageArea[is.na(all_test$GarageArea)] <- 'No Garage'
-table(all_test$GarageArea)
 
 all_test$GarageQual <- addLevel(all_test$GarageQual, "None")
 all_test$GarageQual <- ifelse(is.na(all_test$GarageQual), "None", paste(all_test$GarageQual))
 all_test$GarageQual <- as.factor(all_test$GarageQual)
-table(all_test$GarageQual)
 
 all_test$GarageCond <- addLevel(all_test$GarageCond, "None")
 all_test$GarageCond <- ifelse(is.na(all_test$GarageCond), "None", paste(all_test$GarageCond))
 all_test$GarageCond <- as.factor(all_test$GarageCond)
-table(all_test$GarageCond)
 
 #BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/BsmtFinSF1/BsmtFinType2/BsmtFinSF2/BsmtUnfSF/BsmtQual)
 all_test$BsmtQual <- addLevel(all_test$BsmtQual, "None")
 all_test$BsmtQual <- ifelse(is.na(all_test$BsmtQual), "None", paste(all_test$BsmtQual))
 all_test$BsmtQual <- as.factor(all_test$BsmtQual)
-table(all_test$BsmtQual)
 
 all_test$BsmtExposure <- addLevel(all_test$BsmtExposure, "None")
 all_test$BsmtExposure <- ifelse(is.na(all_test$BsmtExposure), "None", paste(all_test$BsmtExposure))
 all_test$BsmtExposure <- as.factor(all_test$BsmtExposure)
-table(all_test$BsmtExposure)
 
 all_test$BsmtFinType1 <- addLevel(all_test$BsmtFinType1, "None")
 all_test$BsmtFinType1 <- ifelse(is.na(all_test$BsmtFinType1), "None", paste(all_test$BsmtFinType1))
 all_test$BsmtFinType1 <- as.factor(all_test$BsmtFinType1)
-str(all_test$BsmtFinType1)
+
 
 all_test$BsmtCond <- addLevel(all_test$BsmtCond, "None")
 all_test$BsmtCond <- ifelse(is.na(all_test$BsmtCond), "None", paste(all_test$BsmtCond))
 all_test$BsmtCond <- as.factor(all_test$BsmtCond)
-table(all_test$BsmtCond)
+
 
 all_test$BsmtFinType2 <- addLevel(all_test$BsmtFinType2, "None")
 all_test$BsmtFinType2 <- ifelse(is.na(all_test$BsmtFinType2), "None", paste(all_test$BsmtFinType2))
 all_test$BsmtFinType2 <- as.factor(all_test$BsmtFinType2)
-table(all_test$BsmtFinType2)
+
 
 all_test$BsmtFinSF1[is.na(all_test$BsmtFinSF1)] <-0
 all_test$BsmtFinSF2[is.na(all_test$BsmtFinSF2)] <-0
 all_test$BsmtUnfSF[is.na(all_test$BsmtUnfSF)] <-0
 all_test$LotFrontage[is.na(all_test$LotFrontage)] <-0
-table(all_test$LotFrontage)
+
 
 drop.na.columns <- c( "MasVnrType","LotFrontage")
 all_test<- all_test[ , !(names(all_test) %in% drop.na.columns)]
@@ -431,12 +361,12 @@ We hypothesize that there is a positive association between final sales price an
 $$Sales Price = \beta_0 + \beta_{Dist. ISU} + \beta_{House Quality} + \beta_{Size} + ... + \mu$$
   
 ```{r, message=FALSE, warning=FALSE}
-#Load treated and processed data
-New_Data <- read_csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Processed/New_Data.csv")
+#Load treated and processed data 'New_Data.csv'
+New_Data <- read_csv(file.choose())
 
 #Load the data with distance between ISU and
 
-distance <- read_csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Processed/distance.csv")
+distance <- read_csv(file.choose())
 
 #Add the distance data to both Train and Test datasets.
 d_train <- left_join(New_Data, distance, by = "Neighborhood")
