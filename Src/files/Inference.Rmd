@@ -64,7 +64,16 @@ library(here)
 # 
 # set_here("C:/Users/mhs2195/Downloads/Final-Project---Applied-Data-Science-master/Final-Project---Applied-Data-Science-master")
 ```
+use?`
 
+We hypothesize that there is a positive association between final sales price and distance from ISU. In other words, houses that are further away from the university are, in general, sold for a higher price than those in neighborhoods closer to ISU. Without doing any data analysis, we know that there is a golf course at the opposite end of city from the University, which could be evidence supporting our hypothesis. Additionally, student housing usually has a lower price in comparison with other non-student houses, if this is true in Ames, then our hypothesis should be correct.
+
+<center>
+  __Hypothesis:__ 
+</center>
+  
+$$Sales Price = \beta_0 + \beta_{Dist. ISU} + \beta_{House Quality} + \beta_{Size} + ... + \mu$$
+  
 ```{r, message=FALSE, warning=FALSE}
 #Load treated and processed data
 New_Data <- read_csv("/Volumes/KINGSTON/MDP_2018/Applied Data Science/Final Project/Final-Project---Applied-Data-Science-master/Dataset/Processed/New_Data.csv")
@@ -148,16 +157,7 @@ pander(table(d_train_noNAs$Neighborhood, d_train_noNAs$Mean.price))
   
   The city of Ames is a college city, with approximately 35,993 students (exluding postdocs), accouting for more than 57% of the population. This is a conservative estimate since it does not include the university's staff and contractors. Arguebly, at least 60% of Ames works and/or studies at the Iowa State University.
 
-`Then, what is the relationship between distance from the university and the final sales price of a house?`
-
-We hypothesize that there is a positive association between final sales price and distance from ISU. In other words, houses that are further away from the university are, in general, sold for a higher price than those in neighborhoods closer to ISU. Without doing any data analysis, we know that there is a golf course at the opposite end of city from the University, which could be evidence supporting our hypothesis. Additionally, student housing usually has a lower price in comparison with other non-student houses, if this is true in Ames, then our hypothesis should be correct.
-
-<center>
-  __Hypothesis:__ 
-</center>
-  
-$$Sales Price = \beta_0 + \beta_{Dist. ISU} + \beta_{House Quality} + \beta_{Size} + ... + \mu$$
-  
+`Then, what is the relationship between distance from the university and the final sales price of a ho
   Our dataset does not have the exact location of each house, so we used the average distance between the approximate center point of each neighborhood to the center of IUS campus. We used google maps to calculate the distance in miles by car and walking, as well as, the time it would take to go from the location to the IUS campus. Since the campus is fairly large we used Global Café, 513 Farm House Ln, Ames, IA, 50010, as our reference point representing the University.
 
 
