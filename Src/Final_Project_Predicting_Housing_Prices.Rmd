@@ -935,3 +935,105 @@ plot(RF)
 Next Steps:
 1)Time Series Analysis on Pricing
 2)Cluster Analysis on Neighborhood
+
+##Annex
+
+###Data Description
+
+| Variable      | Quantitative? | Class  |
+|---------------|---------------|--------|
+| 1stFlrSF      | Yes           | int    |
+| 2ndFlrSF      | Yes           | int    |
+| 3SsnPorch     | Yes           | int    |
+| BedroomAbvGr  | Yes           | int    |
+| BsmtFinSF1    | Yes           | int    |
+| BsmtFinSF2    | Yes           | int    |
+| BsmtFullBath  | Yes           | int    |
+| BsmtHalfBath  | Yes           | int    |
+| BsmtUnfSF     | Yes           | int    |
+| EnclosedPorch | Yes           | int    |
+| Fireplaces    | Yes           | int    |
+| FullBath      | Yes           | int    |
+| GarageArea    | Yes           | int    |
+| GarageCars    | Yes           | int    |
+| GarageYrBlt   | Yes           | int    |
+| GrLivArea     | Yes           | int    |
+| HalfBath      | Yes           | int    |
+| KitchenAbvGr  | Yes           | int    |
+| LotArea       | Yes           | int    |
+| LotFrontage   | Yes           | int    |
+| LowQualFinSF  | Yes           | int    |
+| MasVnrArea    | Yes           | int    |
+| MiscVal       | Yes           | int    |
+| MoSold        | Yes           | int    |
+| MSSubClass    | Yes           | int    |
+| OpenPorchSF   | Yes           | int    |
+| OverallCond   | Yes           | int    |
+| OverallQual   | Yes           | int    |
+| PoolArea      | Yes           | int    |
+| ScreenPorch   | Yes           | int    |
+| TotalBsmtSF   | Yes           | int    |
+| TotRmsAbvGrd  | Yes           | int    |
+| WoodDeckSF    | Yes           | int    |
+| YearBuilt     | Yes           | int    |
+| YearRemodAdd  | Yes           | int    |
+| YrSold.       | Yes           | int    |
+| Alley         | No            | Factor |
+| BldgType      | No            | Factor |
+| BsmtCond      | No            | Factor |
+| BsmtExposure  | No            | Factor |
+| BsmtFinType1  | No            | Factor |
+| BsmtFinType2  | No            | Factor |
+| BsmtQual      | No            | Factor |
+| CentralAir    | No            | Factor |
+| Condition1    | No            | Factor |
+| Condition2    | No            | Factor |
+| Electrical    | No            | Factor |
+| ExterCond     | No            | Factor |
+| Exterior1st   | No            | Factor |
+| Exterior2nd   | No            | Factor |
+| ExterQual     | No            | Factor |
+| Fence         | No            | Factor |
+| FireplaceQu   | No            | Factor |
+| Foundation    | No            | Factor |
+| Functional    | No            | Factor |
+| GarageCond    | No            | Factor |
+| GarageFinish  | No            | Factor |
+| GarageQual    | No            | Factor |
+| GarageType    | No            | Factor |
+| Heating       | No            | Factor |
+| HeatingQC     | No            | Factor |
+| HouseStyle    | No            | Factor |
+| KitchenQual   | No            | Factor |
+| LandContour   | No            | Factor |
+| LandSlope     | No            | Factor |
+| LotConfig     | No            | Factor |
+| LotShape      | No            | Factor |
+| MasVnrType    | No            | Factor |
+| MiscFeature   | No            | Factor |
+| MSZoning      | No            | Factor |
+| Neighborhood  | No            | Factor |
+| PavedDrive    | No            | Factor |
+| PoolQC        | No            | Factor |
+| RoofMatl      | No            | Factor |
+| RoofStyle     | No            | Factor |
+| SaleCondition | No            | Factor |
+| SaleType      | No            | Factor |
+| Street        | No            | Factor |
+| Utilities.    | No            | Factor |
+
+
+###Distance Variables
+
+`Table XX: New variables`
+  
+| Variable      | Description                                                                                  |
+|---------------|----------------------------------------------------------------------------------------------|
+| Neighborhood  | The name of the neighborhood from the original data.                                         |
+| FullName      | Full name of the neighborhood.                                                               |
+| Lat/Log       | The approximate latitude and longitude of the reference point for each neighborhood.         |
+| Car.miles     | Average distance of suggested routes between the reference point and the ISU campus.         |
+| Car.Time.min  | Average journey duration of suggested routes between the reference point and the ISU campus. |
+| Walk.miles    | Average distance of suggested routes between the reference point and the ISU campus.         |
+| Walk.time.min | Average journey duration of suggested routes between the reference point and the ISU campus. |
+| Bus.time.min  | Average journey duration of suggested routes between the reference point and the ISU campus. |
