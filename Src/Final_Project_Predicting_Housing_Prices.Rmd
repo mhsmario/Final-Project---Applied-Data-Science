@@ -22,8 +22,12 @@ output:
   
 </p> 
 
-```{r}
-knitr::opts_chunk$set(echo = TRUE)
+```{r, include=FALSE }
+knitr::opts_chunk$set(
+	echo = FALSE,
+	message = FALSE,
+	warning = FALSE
+)
 ```
 
 ##Introduction
@@ -112,8 +116,8 @@ library(devtools)
 ```
 
 ```{r}
-#all <- read.csv("train.csv") # read the data
-all <- read.csv(file.choose())
+#all <- read.csv("train.csv")
+all <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Raw/train.csv")
 set.seed(12345)
 in_train <- createDataPartition(y = all$SalePrice, p = 3 / 4, list = FALSE) # Split data into training and testing and recombine them
 str(in_train)
@@ -264,7 +268,7 @@ na_count_test <-sapply(all, function(y) sum(length(which(is.na(y)))))
 na_count_test <- data.frame(na_count_test)
 
 
-#write_excel_csv(all, "New_Data.csv")
+write_excel_csv(all, "New_Data.csv")
 ```
 
 ## 2. Inference 
@@ -295,11 +299,10 @@ Where $\beta_{Dist. ISU}$ is positive.
 ```{r, message=FALSE, warning=FALSE}
 #Load treated and processed data 'New_Data.csv'
 New_Data <- read_csv("New_Data.csv")
-
 #Load the data with distance between ISU and
 
-distance <- read_csv("distance.csv")
-
+#distance <- read_csv("distance.csv")
+distance <- read_csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Processed/distance.csv")
 #Add the distance data to both Train and Test datasets.
 d_train <- left_join(New_Data, distance, by = "Neighborhood")
 ```
@@ -782,8 +785,8 @@ In this section, we aim to find the most important variables that affect the Sal
 #### 3.1.1 Correlation with SalePrice
 ```{r}
 # Neighborhood
-#train <- read.csv("New_Data.csv")
-train <- read.csv(file.choose())
+train <- read.csv("New_Data.csv")
+
 train <- na.omit(train)
 train$GarageYrBlt <- as.integer(train$GarageYrBlt)
 ```
@@ -911,7 +914,7 @@ sum(diag(tbl_log))/sum(tbl_log)
 library(MASS)
 LDA <- lda(Mean.price ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLivArea,data = train1)
 
-# training set
+#  make predictions and summarize accuracy - training set
 y_hat_LDA <- predict(LDA, newdata = train1)
 summary(y_hat_LDA$posterior)
 z_LDA <- y_hat_LDA$class
@@ -919,7 +922,7 @@ tbl_LDA <- table(train1$Mean.price, z_LDA)
 tbl_LDA
 sum(diag(tbl_LDA))/sum(tbl_LDA)
 
-# testing set
+# make predictions and summarize accuracy - testing set
 y_hat_LDA <- predict(LDA, newdata = test1)
 summary(y_hat_LDA$posterior)
 z_LDA <- y_hat_LDA$class
@@ -938,18 +941,14 @@ classifier = svm(formula = Mean.price ~ . ,data = train1[,-74] ,
                  kernel = 'linear')
 help("svm")
 
-# Predicting the Test set results
+# make predictions and summarize accuracy - training set
 y_pred = predict(classifier, newdata = train1[,-c(74,75)])
-
-# Making the Confusion Matrix
 cm = table(train1[,75], y_pred)
 cm
 sum(diag(cm))/sum(cm)
 
-# Predicting the Test set results
+# Prmake predictions and summarize accuracy - test set
 y_pred = predict(classifier, newdata = test1[,-c(74,75)])
-
-# Making the Confusion Matrix
 cm = table(test1[,75], y_pred)
 cm
 sum(diag(cm))/sum(cm)
@@ -962,12 +961,12 @@ RF <- randomForest(x=train1[, (names(train1) %in% c("OverallQual","BsmtFinSF1","
 y_pred1 = predict(RF, newdata = train1[-c(74,75)])
 y_pred2 = predict(RF, newdata = test1[-c(74,75)])
 
-# training set
+# make predictions and summarize accuracy - training set
 rf_cm = table(train1[,75], y_pred1)
 rf_cm
 sum(diag(rf_cm))/sum(rf_cm)
 
-# testing set
+# make predictions and summarize accuracy - testing set
 rf_cm = table(test1[,75], y_pred2)
 rf_cm
 sum(diag(rf_cm))/sum(rf_cm)
