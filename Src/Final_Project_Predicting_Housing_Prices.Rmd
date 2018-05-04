@@ -151,8 +151,8 @@ These were modified separately and then a new dataset containing 1451 observatio
 
 ```{r, dealing with NAs}
 all_test <- all
-levels(all_test$PoolQC)
 
+# Add new levels and change NA into 'None' level
 addLevel <- function(x, newlevel=NULL) {
   if(is.factor(x)) {
     if (is.na(match(newlevel, levels(x))))
@@ -171,88 +171,102 @@ all_test$PoolQC <- as.factor(all_test$PoolQC)
 ```
 
 ```{r dealing with NAs 2}
+
+# Add new levels and change NA into 'None' level, meaning No Miscellaneous Feature
 all_test$MiscFeature <- addLevel(all_test$MiscFeature, "None")
 all_test$MiscFeature <- ifelse(is.na(all_test$MiscFeature), "None", paste(all_test$MiscFeature))
 all_test$MiscFeature <- as.factor(all_test$MiscFeature)
-                                                                                            
+
+# Add new levels and change NA into 'None' level, meaning No Alley                                                                         
 all_test$Alley <- addLevel(all_test$Alley, "None")
 all_test$Alley <- ifelse(is.na(all_test$Alley), "None", paste(all$Alley))
 all_test$Alley <- as.factor(all_test$Alley)
 
+# Add new levels and change NA into 'None' level, meaning No Fence
 all_test$Fence <- addLevel(all_test$Fence, "None")
 all_test$Fence <- ifelse(is.na(all$Fence), "None", paste(all_test$Fence))
 all_test$Fence <- as.factor(all_test$Fence)
 
+# Add new levels and change NA into 'None' level, meaning No Fire place
 all_test$FireplaceQu <- addLevel(all_test$FireplaceQu, "None")
 all_test$FireplaceQu <- ifelse(!is.na(all_test$FireplaceQu), paste(all_test$FireplaceQu), "None")
 all_test$FireplaceQu <- as.factor(all_test$FireplaceQu)
 
-
-#GarageYrBlt/GarageFinish/GarageCars/GarageArea/GarageQual/GarageCond
+# Add new levels and change NA into 'None' level, meaning No Garage
 all_test$GarageType <- addLevel(all_test$GarageType, "None")
 all_test$GarageType <- ifelse(is.na(all_test$GarageType), "None", paste(all_test$GarageType))
 all_test$GarageType <- as.factor(all_test$GarageType)
 
+# Add new levels and change NA into 'No Garage', meaning No Garage
 all_test$GarageYrBlt[is.na(all_test$GarageYrBlt)] <- 'No Garage'
 all$GarageYrBlt <- as.numeric(all$GarageYrBlt)
 
-all_test$GarageFinish <- addLevel(all_test$GarageFinish, "None")
-all_test$GarageFinish <- ifelse(is.na(all_test$GarageFinish), "None", paste(all_test$GarageFinish))
+# Add new levels and change NA into 'No Garage', meaning No Garage
+all_test$GarageFinish <- addLevel(all_test$GarageFinish, "No Garage")
+all_test$GarageFinish <- ifelse(is.na(all_test$GarageFinish), "No Garage", paste(all_test$GarageFinish))
 all_test$GarageFinish <- as.factor(all_test$GarageFinish)
 
+# Add new levels and change NA into 'No Garage', meaning No Garage
 all_test$GarageCars[is.na(all_test$GarageCars)] <- 'No Garage'
 all_test$GarageCars <- as.factor(all_test$GarageCars)
 
+# Add new levels and change NA into 'No Garage', meaning No Garage
 all_test$GarageArea[is.na(all_test$GarageArea)] <- 'No Garage'
 
+# Add new levels and change NA into 'None' level, meaning No Garage
 all_test$GarageQual <- addLevel(all_test$GarageQual, "None")
 all_test$GarageQual <- ifelse(is.na(all_test$GarageQual), "None", paste(all_test$GarageQual))
 all_test$GarageQual <- as.factor(all_test$GarageQual)
 
+# Add new levels and change NA into 'None' level, meaning No Garage
 all_test$GarageCond <- addLevel(all_test$GarageCond, "None")
 all_test$GarageCond <- ifelse(is.na(all_test$GarageCond), "None", paste(all_test$GarageCond))
 all_test$GarageCond <- as.factor(all_test$GarageCond)
 
-#BsmtExposure: Refers to walkout or garden level walls (**smae for BsmtFinType1/BsmtFinSF1/BsmtFinType2/BsmtFinSF2/BsmtUnfSF/BsmtQual)
+# Add new levels and change NA into 'None' level, meaning No Basement
 all_test$BsmtQual <- addLevel(all_test$BsmtQual, "None")
 all_test$BsmtQual <- ifelse(is.na(all_test$BsmtQual), "None", paste(all_test$BsmtQual))
 all_test$BsmtQual <- as.factor(all_test$BsmtQual)
 
+# Add new levels and change NA into 'None' level, meaning No Basement
 all_test$BsmtExposure <- addLevel(all_test$BsmtExposure, "None")
 all_test$BsmtExposure <- ifelse(is.na(all_test$BsmtExposure), "None", paste(all_test$BsmtExposure))
 all_test$BsmtExposure <- as.factor(all_test$BsmtExposure)
 
+# Add new levels and change NA into 'None' level, meaning No Basement
 all_test$BsmtFinType1 <- addLevel(all_test$BsmtFinType1, "None")
 all_test$BsmtFinType1 <- ifelse(is.na(all_test$BsmtFinType1), "None", paste(all_test$BsmtFinType1))
 all_test$BsmtFinType1 <- as.factor(all_test$BsmtFinType1)
 
-
+# Add new levels and change NA into 'None' level, meaning No Basement
 all_test$BsmtCond <- addLevel(all_test$BsmtCond, "None")
 all_test$BsmtCond <- ifelse(is.na(all_test$BsmtCond), "None", paste(all_test$BsmtCond))
 all_test$BsmtCond <- as.factor(all_test$BsmtCond)
 
-
+# Add new levels and change NA into 'None' level, meaning No Basement
 all_test$BsmtFinType2 <- addLevel(all_test$BsmtFinType2, "None")
 all_test$BsmtFinType2 <- ifelse(is.na(all_test$BsmtFinType2), "None", paste(all_test$BsmtFinType2))
 all_test$BsmtFinType2 <- as.factor(all_test$BsmtFinType2)
 
-
+# Set Basement Area equals 0 for houses which do not have basement
 all_test$BsmtFinSF1[is.na(all_test$BsmtFinSF1)] <-0
 all_test$BsmtFinSF2[is.na(all_test$BsmtFinSF2)] <-0
 all_test$BsmtUnfSF[is.na(all_test$BsmtUnfSF)] <-0
-all_test$LotFrontage[is.na(all_test$LotFrontage)] <-0
 
+# Set Basement Area equals 0 for houses which has zero linear feet of street connected to property
+all_test$LotFrontage[is.na(all_test$LotFrontage)] <-0
 
 drop.na.columns <- c( "MasVnrType","LotFrontage")
 all_test<- all_test[ , !(names(all_test) %in% drop.na.columns)]
-
 all_test <- na.omit(all_test)
 
 ```
 
 ```{r dealing with NAs 3}
-# factorize some of the variables
+
 all <- all_test
+
+# factorize some of the variables
 all$Foundation <- as.factor(all$Foundation)
 all$Heating <- as.factor(all$Heating)
 all$RoofStyle <- as.factor(all$RoofStyle)
@@ -357,9 +371,18 @@ ggplot(neighb) + geom_col(aes(neighb$rn, y = neighb$mean.price,  fill = df$rn)) 
   ylab("Average Sales Price") + scale_y_continuous(labels = scales::dollar) +
   xlab("Neighborhood") + coord_flip()
 ```
+Table 1.1 summarizes the the average sales price for each neighborhood in Ames, Iowa.
+
+```{r}
+ggplot(data=all, aes(x=(Neighborhood))) +
+        geom_histogram(stat='count')+
+        geom_label(stat = "count", aes(label = ..count.., y = ..count..), size=3)+
+        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+        ggtitle("Distribution of houses count by neighborhood")
+```
 
 
-Table XX summarizes the number of houses and their average price per neighborhood.
+Table 1.2 summarizes the number of houses and their average price per neighborhood.
 
 <center>
 
@@ -399,6 +422,8 @@ lines(density(all$SalePrice), col="blue", lwd=2)
 lines(density(all$SalePrice, adjust=2), lty="dotted")
 
 ```
+Table 2.1 summarizes the frequency of Sales Price for all houses.
+
 
 <h4> __Overall Quality__ </h4>
   
@@ -423,7 +448,7 @@ ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallQual), y=SalePrice)
         scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
         ggtitle("Boxplot - Sales Price and Overall Quality")
 ```
-
+Table 2.2 summarizes the relationship of Sales Price and Overall Quality Rating of houses.
 
 <h4> __OverallCond__ </h4>
 
@@ -447,6 +472,7 @@ ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallCond), y=SalePrice)
         scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
   ggtitle("Boxplot - Sales Price and Overall Condition") 
 ```
+Table 2.3 summarizes the relationship of Sales Price and Overall Condition Rating of houses.
 
 <h4> __'GrLivArea' (Above Ground Living Area)__ </h4>
 
@@ -466,7 +492,7 @@ outlier1$Id
 all[c(524, 1299, 2550), c('SalePrice', 'GrLivArea', 'OverallQual')]
 
 ```
-
+Table 2.4 summarizes the relationship of Sales Price and Ground Living Area of houses.
 
 <h4> __GarageCars__ </h4>
   
@@ -489,6 +515,7 @@ outlier2$Id
 all[c(524, 1299, 692, 1183), c('SalePrice', 'GrLivArea', 'OverallQual','GarageCars')] 
 
 ```
+Table 2.5 summarizes the relationship of Sales Price and Capacity of Garage of houses.
 
 <h4> __BsmtFinSF1__ </h4>
 
@@ -503,6 +530,7 @@ ggplot(data=all[!is.na(all$SalePrice),], aes(x=BsmtFinSF1, y=SalePrice))+
   
 
 ```
+Table 2.6 summarizes the relationship of Sales Price and Basement Area of houses.
 
 <h4> __Neighborhood__ </h4>
 
@@ -533,26 +561,7 @@ Neighborhood: Physical locations within Ames city limits
        StoneBr	Stone Brook
        Timber	Timberland
        Veenker	Veenker
-       
-```{r neighborhood}
-df <- data.frame(tapply(all$SalePrice, all$Neighborhood, mean))
 
-library(data.table)
-setDT(df, keep.rownames = TRUE)[]
-colnames(df) <- c('Neighborhood','Average SalePrice')
-
-ggplot(df, aes(x = Neighborhood, y= `Average SalePrice`)) + 
-  geom_col(aes(fill = df$Neighborhood))+
-  geom_hline(yintercept=mean(all$SalePrice), linetype="dashed", color = "red")+
-        theme(axis.text.x = element_text(angle = 45, hjust = 1)) + 
-  ggtitle("Graph XX: Average Sales Price by Neighborhood")
-
-ggplot(data=all, aes(x=(Neighborhood))) +
-        geom_histogram(stat='count')+
-        geom_label(stat = "count", aes(label = ..count.., y = ..count..), size=3)+
-        theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-        ggtitle("Frequency Distribution of average sales price by neighborhood")
-```
 
 <h4> __YearBuilt__ </h4>
 YearBuilt: Original construction date
@@ -566,7 +575,7 @@ ggplot(data=all[!is.na(all$SalePrice),], aes(x=YearBuilt, y=SalePrice))+
   labs(x = 'Year of house built')
 
 ```
-
+Table 2.7 summarizes the relationship of Sales Price and Year of house built.
 
 ### 2.3 Inferential Models
 
@@ -697,6 +706,9 @@ cv.lasso <- cv.glmnet(x, y)
 
 #coef(cv.lasso, s = "lambda.min")
 ```
+<center>
+
+`Table XX: Lasso coefficients`
 
 The cross-validation plot suggests that the model works best when it has approximately 11 predictors (when using lambda for the most regularized model such that error is within one standard error of the minimum.). Lasso helped to reduce the number of variables by over 87%. We can use cross-validation to extract coefficients that collectively minimize mean squared error.
  
@@ -704,7 +716,7 @@ It includes the cross-validation curve (red dotted line), and upper and lower st
 
 ```{r}
 plot(cv.lasso) 
-title(sub = "Graph XX: Cross Validation for Lasso", cex = 1.5)
+title(sub = "Graph 3: Cross Validation for Lasso", cex = 1.5)
 ```
  
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
@@ -731,9 +743,6 @@ myLasso.Results <- data.frame(
 ```
 
 
-<center>
-
-`Table XX: Lasso coefficients`
 
 ```{r}
 pander(myLasso.Results)
@@ -786,9 +795,8 @@ In this section, we aim to find the most important variables that affect the Sal
 ```{r}
 # Neighborhood
 train <- read.csv("New_Data.csv")
-
 train <- na.omit(train)
-train$GarageYrBlt <- as.integer(train$GarageYrBlt)
+
 ```
 
 We would like to see What numeric variables correlated with SalePrice.
@@ -797,6 +805,7 @@ According to the correlation table, variable 'Overall Quality'(Overall material 
 For the rest,it is also clear the multicollinearity is an issue. For example: the correlation between GarageCars and GarageArea is very high (0.89), and both have similar (high) correlations with SalePrice. The other 6 six variables with a correlation higher than 0.5 with SalePrice are: -TotalBsmtSF: Total square feet of basement area -1stFlrSF: First Floor square feet -FullBath: Full bathrooms above grade -TotRmsAbvGrd: Total rooms above grade (does not include bathrooms) -YearBuilt: Original construction date -YearRemodAdd: Remodel date (same as construction date if no remodeling or additions)
 
 ```{r correlation2, eval=FALSE, include=FALSE}
+train$GarageYrBlt <- as.integer(train$GarageYrBlt)
 numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
 factorVars <- which(sapply(train, is.factor)) #index vector factor variables
 all_numVar <- train[, numericVars]
@@ -808,6 +817,7 @@ cor_numVar <- cor_numVar[CorHigh, CorHigh]
 
 corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt", tl.cex = 0.7,cl.cex = .7, number.cex=.7)
 ```
+Graph 4: Correlation Table of Sales Price and all numeric variables
 
 Since there are several paris of varibles are highly correlated to each other, we can simply drop one of them.
 Therefore, I chose to drop 'TotalRmsAbvGrd'(vs GrLivArea); 'GarageArea'(vs GarageCars); 'TotalBsmtSF' (vs X1stFkrSF); 'YearRemodAdd'(vs YearBiult)
@@ -836,6 +846,7 @@ imp_DF <- imp_DF[order(imp_DF$MSE, decreasing = TRUE),]
 
 ggplot(imp_DF[1:20,], aes(x = reorder(Variables, MSE), y = MSE, fill = MSE)) + geom_bar(stat = 'identity') + labs(x = 'Variables', y= '% increase MSE if variable is randomly permuted') + coord_flip() + theme(legend.position = "none")
 ```
+Graph 5: Varaible selection by random forest
 
 ### 3.3 Predictive Models
 
@@ -882,7 +893,7 @@ library(VGAM)
 # with interaction term
 fit_log <- vglm(Mean.price ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLivArea, family=multinomial, data=train1)
 # summarize the fit
-summary(fit_log)
+
 
 # make predictions - training set
 probabilities <- predict(fit_log, newdata = train1, type="response")
@@ -892,9 +903,9 @@ predictions[which(predictions=="Median")] <- levels(train1$Mean.price)[2]
 predictions[which(predictions=="Higher")] <- levels(train1$Mean.price)[3]
 
 # summarize accuracy - training set
-tbl_log <- table(predictions, train1$Mean.price)
-tbl_log
-sum(diag(tbl_log))/sum(tbl_log)
+tbl_log1 <- table(predictions, train1$Mean.price)
+tbl_log1
+sum(diag(tbl_log1))/sum(tbl_log1)
 
 # make predictions - testing set
 probabilities <- predict(fit_log, newdata = test1, type="response")
@@ -904,9 +915,9 @@ predictions[which(predictions=="Median")] <- levels(test1$Mean.price)[2]
 predictions[which(predictions=="Higher")] <- levels(test1$Mean.price)[3]
 
 # summarize accuracy - testing set
-tbl_log <- table(predictions, test1$Mean.price)
-tbl_log
-sum(diag(tbl_log))/sum(tbl_log)
+tbl_log2 <- table(predictions, test1$Mean.price)
+tbl_log2
+sum(diag(tbl_log2))/sum(tbl_log2)
 ```
 
 #### 3.3.2 Linear Discriminant Analysis
@@ -918,9 +929,9 @@ LDA <- lda(Mean.price ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLi
 y_hat_LDA <- predict(LDA, newdata = train1)
 summary(y_hat_LDA$posterior)
 z_LDA <- y_hat_LDA$class
-tbl_LDA <- table(train1$Mean.price, z_LDA)
-tbl_LDA
-sum(diag(tbl_LDA))/sum(tbl_LDA)
+tbl_LDA1 <- table(train1$Mean.price, z_LDA)
+tbl_LDA1
+sum(diag(tbl_LDA1))/sum(tbl_LDA)
 
 # make predictions and summarize accuracy - testing set
 y_hat_LDA <- predict(LDA, newdata = test1)
@@ -939,13 +950,12 @@ library(e1071)
 classifier = svm(formula = Mean.price ~ . ,data = train1[,-74] ,
                  type = 'C-classification',
                  kernel = 'linear')
-help("svm")
 
 # make predictions and summarize accuracy - training set
 y_pred = predict(classifier, newdata = train1[,-c(74,75)])
-cm = table(train1[,75], y_pred)
-cm
-sum(diag(cm))/sum(cm)
+cm1 = table(train1[,75], y_pred)
+cm1
+sum(diag(cm1))/sum(cm1)
 
 # Prmake predictions and summarize accuracy - test set
 y_pred = predict(classifier, newdata = test1[,-c(74,75)])
@@ -962,9 +972,9 @@ y_pred1 = predict(RF, newdata = train1[-c(74,75)])
 y_pred2 = predict(RF, newdata = test1[-c(74,75)])
 
 # make predictions and summarize accuracy - training set
-rf_cm = table(train1[,75], y_pred1)
-rf_cm
-sum(diag(rf_cm))/sum(rf_cm)
+rf_cm1 = table(train1[,75], y_pred1)
+rf_cm1
+sum(diag(rf_cm1))/sum(rf_cm1)
 
 # make predictions and summarize accuracy - testing set
 rf_cm = table(test1[,75], y_pred2)
@@ -975,8 +985,19 @@ plot(RF)
 ```
 
 ### 3.4 Results
+The prediction accuracy of Vector Generalized Linear Model in training set is 0.8937729.
+The prediction accuracy of Vector Generalized Linear Model in testing set is 0.8997135.
 
+The prediction accuracy of Linear Discriminant Analysisr Model in training set is 0.8424908.
+The prediction accuracy of Linear Discriminant Analysis Model in testing set is 0.8681948.
 
+The prediction accuracy of Support Vector Machine Model in training set is 0.9798535.
+The prediction accuracy of Support Vector Machine Model in testing set is 0.9169054.
+
+The prediction accuracy of Random Forest Model in training set is 0.9945055.
+The prediction accuracy of Random Forest Model in testing set is 0.8939828.
+
+To conclude, Vector Generalized Linear Model and Linear Discriminant Analysisr Model gave results with fair accuracy and no obvious underfitting were observed. The Support Vector Machine Model gave the best accuracy in testing set (0.917) and has small overfitting problem in training set (0.980). The Random Forest Model gave the best accuracy in training set (0.995) almost 100%, but significant overfitting of training set was observed as the accuracy for testing set is only 0.894.
 
 ## 4. Conclusion
 
