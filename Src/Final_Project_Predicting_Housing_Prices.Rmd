@@ -453,9 +453,17 @@ pander(table(d_train_noNAs$Neighborhood, d_train_noNAs$Mean.price))
 | Walk.time.min | Average journey duration of suggested routes between the reference point and the ISU campus. |
 | Bus.time.min  | Average journey duration of suggested routes between the reference point and the ISU campus. |
 
-### 2.2 Understanding the important variables
+
+
+########################### I include the variable description in the following section 2.2 ###########################################
+########################### If you consider to include some of them as control varibles  in statistic analysis #################################
+
+
+
+### 2.2 Understanding the important variables 
 
 #### SalePrice
+SalePrice: the property's sale price in dollars
 ```{r}
 summary(all$SalePrice)
 hist(all$SalePrice, breaks=seq(30000, 760000, 500),prob=TRUE )
@@ -485,6 +493,25 @@ ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallQual), y=SalePrice)
         scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
 ```
 
+#### OverallCond
+OverallCond: Rates the overall condition of the house
+
+       10	Very Excellent
+       9	Excellent
+       8	Very Good
+       7	Good
+       6	Above Average	
+       5	Average
+       4	Below Average	
+       3	Fair
+       2	Poor
+       1	Very Poor
+```{r}
+ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallCond), y=SalePrice))+
+        geom_boxplot() + labs(x='Overall Condition')+
+        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
+```
+
 #### 'GrLivArea' (‘Above Grade’ Living Area)
 GrLivArea: Above grade (ground) living area square feet  
 GrLivArea is observed to have positive correlation with SalePrice, which make sense since big houses are generally more expensive than smaller. One thing worth noticing is that there are two houses with really large living areas and low SalePrice (potential to be outliers). I checked the data and found out they are houses 524, 1299 and 2550(NA for SalePrice).
@@ -492,11 +519,14 @@ GrLivArea is observed to have positive correlation with SalePrice, which make se
 ggplot(data=all[!is.na(all$SalePrice),], aes(x=GrLivArea, y=SalePrice))+
         geom_point(col='black') + geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1)) +
         scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
+
+# potential outliers found
 outlier1 <- all%>% filter(GrLivArea > 4500)
 outlier1$Id
 all[c(524, 1299, 2550), c('SalePrice', 'GrLivArea', 'OverallQual')]
 
 ```
+
 
 #### GarageCars
   
@@ -508,17 +538,22 @@ ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(GarageCars), y=SalePrice))
         geom_boxplot() + labs(x='Size of Garage/car') +
         scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
 
+#potential outliers found
 outlier2 <- all %>% 
   filter(GarageCars == 3)%>%
   filter(SalePrice > 700000)
 
 outlier2$Id
-all[c(524, 1299, 692, 1183), c('SalePrice', 'GrLivArea', 'OverallQual','GarageCars')]
+
+#check the other dimention information of outliers 
+all[c(524, 1299, 692, 1183), c('SalePrice', 'GrLivArea', 'OverallQual','GarageCars')] 
 
 ```
 
 #### BsmtFinSF1
+BsmtFinSF1: Type 1 basement finished square feet
 ```{r, BsmtFinSF1}
+
 ggplot(data=all[!is.na(all$SalePrice),], aes(x=BsmtFinSF1, y=SalePrice))+
         geom_point(col='black') + geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1))+
         scale_x_continuous(limits = c(100 ,2500))
@@ -557,23 +592,25 @@ Neighborhood: Physical locations within Ames city limits
        
 ```{r neighborhood}
 
-df <- data.frame(tapply(train$SalePrice, train$Neighborhood, mean))
+df <- data.frame(tapply(all$SalePrice, all$Neighborhood, mean))
+
 library(data.table)
 setDT(df, keep.rownames = TRUE)[]
 colnames(df) <- c('Neighborhood','Average SalePrice')
 
 ggplot(df, aes(x = Neighborhood, y= `Average SalePrice`)) + 
   geom_col(aes(fill = df$Neighborhood))+
-  geom_hline(yintercept=mean(train$SalePrice), linetype="dashed", color = "red")+
+  geom_hline(yintercept=mean(all$SalePrice), linetype="dashed", color = "red")+
         theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
-ggplot(data=train, aes(x=(Neighborhood))) +
+ggplot(data=all, aes(x=(Neighborhood))) +
         geom_histogram(stat='count')+
         geom_label(stat = "count", aes(label = ..count.., y = ..count..), size=3)+
         theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 #### YearBuilt
+YearBuilt: Original construction date
 ```{r, yearbuilt}
 
 ggplot(data=all[!is.na(all$SalePrice),], aes(x=YearBuilt, y=SalePrice))+
@@ -776,7 +813,7 @@ In this section, we aim to find the most important varibals that affect the Sale
 #### Random Forest 
 ```{r}
 # Neighborhood
-train <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Src/New_Data.csv")
+train <- read.csv(file.choose())
 
 train <- na.omit(train)
 train$GarageYrBlt <- as.integer(train$GarageYrBlt)
@@ -790,6 +827,8 @@ According to the correlation table, variable 'Overall Quality'(Overall material 
 For the rest,it is also clear the multicollinearity is an issue. For example: the correlation between GarageCars and GarageArea is very high (0.89), and both have similar (high) correlations with SalePrice. The other 6 six variables with a correlation higher than 0.5 with SalePrice are: -TotalBsmtSF: Total square feet of basement area -1stFlrSF: First Floor square feet -FullBath: Full bathrooms above grade -TotRmsAbvGrd: Total rooms above grade (does not include bathrooms) -YearBuilt: Original construction date -YearRemodAdd: Remodel date (same as construction date if no remodeling or additions)
 
 ```{r correlation2}
+numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
+factorVars <- which(sapply(train, is.factor)) #index vector factor variables
 all_numVar <- train[, numericVars]
 cor_numVar <- cor(all_numVar, use="pairwise.complete.obs")
 cor_sorted <- as.matrix(sort(cor_numVar[,'SalePrice'], decreasing = TRUE))
@@ -815,8 +854,6 @@ write_csv(train, 'Final_data.csv')
 The correlation table above provide a good overview of the most important numeric variables and multicolinerity among those variables. Next, I want to get an overview of the most important variables including the categorical variables.
 ```{r rf again}
 train <- read.csv('Final_data.csv')
-numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
-factorVars <- which(sapply(train, is.factor)) #index vector factor variables
 cat('There are', length(numericVars), 'numeric variables, and', length(factorVars), 'categoric variables')
 
 set.seed(123)
