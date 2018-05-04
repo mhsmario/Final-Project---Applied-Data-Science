@@ -108,11 +108,12 @@ library(shiny)
 library(ggfortify)
 library(pander)
 library(here)
+library(devtools)
 ```
 
 ```{r}
-all <- read.csv("train.csv") # read the data
-
+#all <- read.csv("train.csv") # read the data
+all <- read.csv(file.choose())
 set.seed(12345)
 in_train <- createDataPartition(y = all$SalePrice, p = 3 / 4, list = FALSE) # Split data into training and testing and recombine them
 str(in_train)
@@ -386,9 +387,14 @@ SalePrice: the property's sale price in dollars
  
 ```{r SalesPrice}
 summary(all$SalePrice)
-hist(all$SalePrice, breaks=seq(30000, 760000, 500),prob=TRUE )
+
+hist(all$SalePrice, 
+     main = 'Histogram of Sale Price',
+     xlab = 'Sale Price',
+     breaks=seq(30000, 760000, 5000),prob=TRUE)
 lines(density(all$SalePrice), col="blue", lwd=2)       
 lines(density(all$SalePrice, adjust=2), lty="dotted")
+
 ```
 
 <h4> __Overall Quality__ </h4>
@@ -412,7 +418,7 @@ Overall Quality is observed to have positive correlation with SalePrice. It does
 ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallQual), y=SalePrice))+
         geom_boxplot() + labs(x='Overall Quality') +
         scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
-        ggtitle("Graph XX: Boxplot - Sales Price and Overall Quality")
+        ggtitle("Boxplot - Sales Price and Overall Quality")
 ```
 
 
@@ -436,7 +442,7 @@ OverallCond: Rates the overall condition of the house:
 ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallCond), y=SalePrice))+
         geom_boxplot() + labs(x='Overall Condition')+
         scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
-  ggtitle("Graph XX: Boxplot - Sales Price and Overall Condition") 
+  ggtitle("Boxplot - Sales Price and Overall Condition") 
 ```
 
 <h4> __'GrLivArea' (Above Ground Living Area)__ </h4>
@@ -446,9 +452,10 @@ GrLivArea is observed to have positive correlation with SalePrice, which make se
 
 ```{r}
 ggplot(data=all[!is.na(all$SalePrice),], aes(x=GrLivArea, y=SalePrice))+
-        geom_point(col='black') + geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1)) +
-        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
-  ggtitle("Graph XX: Sales Price and Ground Living Area")
+  geom_point(col='black') + geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1)) +
+  scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
+  ggtitle("Sales Price and Ground Living Area")+
+  labs(x = 'Ground Living Area (in square feet)')
 
 # potential outliers found
 outlier1 <- all%>% filter(GrLivArea > 4500)
@@ -463,11 +470,10 @@ all[c(524, 1299, 2550), c('SalePrice', 'GrLivArea', 'OverallQual')]
 The Size of garage shows a positive correlation with SalePrice from level 0-3 but fall at level 4 (non-linear correlation). It make sense because only big houses have large garage, and bigger house usually have higher SalePrice. Also for houses with a garage of capacity of 3 cars(level 3), there are several outliners with much higher SalePrice existing, it must be other factors affecting the outcome price. Something might happen for houses with level 4 garage that needed to explained.
 
 ```{r, GarageCars}
-
-summary(all$GarageCars)
 ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(GarageCars), y=SalePrice))+
         geom_boxplot() + labs(x='Size of Garage/car') +
-        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)
+        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)+
+  ggtitle("Sales Price and Garage Capacity")
 
 #potential outliers found
 outlier2 <- all %>% 
@@ -488,7 +494,10 @@ BsmtFinSF1: Type 1 basement finished square feet
 
 ggplot(data=all[!is.na(all$SalePrice),], aes(x=BsmtFinSF1, y=SalePrice))+
         geom_point(col='black') + geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1))+
-        scale_x_continuous(limits = c(100 ,2500)) + ggtitle("Graph XX: .....")
+        scale_x_continuous(limits = c(100 ,2500)) + 
+  ggtitle("Sales Price and Basement Area")+
+  labs(x = 'Basement Area (in square feet)')
+  
 
 ```
 
@@ -539,7 +548,7 @@ ggplot(data=all, aes(x=(Neighborhood))) +
         geom_histogram(stat='count')+
         geom_label(stat = "count", aes(label = ..count.., y = ..count..), size=3)+
         theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
-        ggtitle("Graph XX: Frequency Distribution of average sales price by neighborhood")
+        ggtitle("Frequency Distribution of average sales price by neighborhood")
 ```
 
 <h4> __YearBuilt__ </h4>
@@ -547,8 +556,12 @@ YearBuilt: Original construction date
 ```{r, yearbuilt}
 
 ggplot(data=all[!is.na(all$SalePrice),], aes(x=YearBuilt, y=SalePrice))+
-        geom_point(col='black') + geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1))+
-        scale_x_continuous(limits = c(1860 ,2020))
+  geom_point(col='black') + 
+  geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1))+
+  scale_x_continuous(limits = c(1860 ,2020))+
+  ggtitle("Sales Price and Year of house built")+
+  labs(x = 'Year of house built')
+
 ```
 
 
@@ -769,8 +782,8 @@ In this section, we aim to find the most important variables that affect the Sal
 #### 3.1.1 Correlation with SalePrice
 ```{r}
 # Neighborhood
-train <- read.csv("train.csv")
-
+#train <- read.csv("New_Data.csv")
+train <- read.csv(file.choose())
 train <- na.omit(train)
 train$GarageYrBlt <- as.integer(train$GarageYrBlt)
 ```
@@ -868,14 +881,26 @@ fit_log <- vglm(Mean.price ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood +
 # summarize the fit
 summary(fit_log)
 
-# make predictions
+# make predictions - training set
+probabilities <- predict(fit_log, newdata = train1, type="response")
+predictions <- apply(probabilities, 1, which.max)
+predictions[which(predictions=="Lower")] <- levels(train1$Mean.price)[1]
+predictions[which(predictions=="Median")] <- levels(train1$Mean.price)[2]
+predictions[which(predictions=="Higher")] <- levels(train1$Mean.price)[3]
+
+# summarize accuracy - training set
+tbl_log <- table(predictions, train1$Mean.price)
+tbl_log
+sum(diag(tbl_log))/sum(tbl_log)
+
+# make predictions - testing set
 probabilities <- predict(fit_log, newdata = test1, type="response")
 predictions <- apply(probabilities, 1, which.max)
 predictions[which(predictions=="Lower")] <- levels(test1$Mean.price)[1]
 predictions[which(predictions=="Median")] <- levels(test1$Mean.price)[2]
 predictions[which(predictions=="Higher")] <- levels(test1$Mean.price)[3]
 
-# summarize accuracy
+# summarize accuracy - testing set
 tbl_log <- table(predictions, test1$Mean.price)
 tbl_log
 sum(diag(tbl_log))/sum(tbl_log)
@@ -886,6 +911,15 @@ sum(diag(tbl_log))/sum(tbl_log)
 library(MASS)
 LDA <- lda(Mean.price ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLivArea,data = train1)
 
+# training set
+y_hat_LDA <- predict(LDA, newdata = train1)
+summary(y_hat_LDA$posterior)
+z_LDA <- y_hat_LDA$class
+tbl_LDA <- table(train1$Mean.price, z_LDA)
+tbl_LDA
+sum(diag(tbl_LDA))/sum(tbl_LDA)
+
+# testing set
 y_hat_LDA <- predict(LDA, newdata = test1)
 summary(y_hat_LDA$posterior)
 z_LDA <- y_hat_LDA$class
@@ -895,6 +929,7 @@ sum(diag(tbl_LDA))/sum(tbl_LDA)
 ```
 
 #### 3.3.3 Support Vector Machine
+Overfitting of training set
 ```{r svm}
 library(e1071)
 
@@ -902,6 +937,15 @@ classifier = svm(formula = Mean.price ~ . ,data = train1[,-74] ,
                  type = 'C-classification',
                  kernel = 'linear')
 help("svm")
+
+# Predicting the Test set results
+y_pred = predict(classifier, newdata = train1[,-c(74,75)])
+
+# Making the Confusion Matrix
+cm = table(train1[,75], y_pred)
+cm
+sum(diag(cm))/sum(cm)
+
 # Predicting the Test set results
 y_pred = predict(classifier, newdata = test1[,-c(74,75)])
 
@@ -915,10 +959,16 @@ sum(diag(cm))/sum(cm)
 ```{r rf predict}
 
 RF <- randomForest(x=train1[, (names(train1) %in% c("OverallQual","BsmtFinSF1","GarageCars",'Neighborhood','GrLivArea'))], y=train1$Mean.price, ntree=150,importance=TRUE)
-y_pred = predict(RF, newdata = test1[-c(74,75)])
+y_pred1 = predict(RF, newdata = train1[-c(74,75)])
+y_pred2 = predict(RF, newdata = test1[-c(74,75)])
 
-# Making the Confusion Matrix
-rf_cm = table(test1[,75], y_pred)
+# training set
+rf_cm = table(train1[,75], y_pred1)
+rf_cm
+sum(diag(rf_cm))/sum(rf_cm)
+
+# testing set
+rf_cm = table(test1[,75], y_pred2)
 rf_cm
 sum(diag(rf_cm))/sum(rf_cm)
 plot(RF)
