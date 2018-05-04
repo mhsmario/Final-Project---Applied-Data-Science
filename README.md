@@ -25,11 +25,11 @@ Group Member: Mario Saraiva, Lizhizi Cui
 
 Start date: __March 01, 2018__
 
-End date: __May, 2018__ (tentative)
+End date: __May 10, 2018__
 
-This project is based on _______ { (the Kaggle competition on "House Prices: Advanced Regression Techniques") or (the Thomson Reuters data on business performance and sustainability) }.
+This project is based on the Kaggle competition on "House Prices: Advanced Regression Techniques".
   
-The data is available at:{ ( https://www.kaggle.com/c/house-prices-advanced-regression-techniques ) or ( from Thomson Reuters terminal at Columbia Business School.) ]
+The data is available at: https://www.kaggle.com/c/house-prices-advanced-regression-techniques.
 
 __Outcomes__: 
 
