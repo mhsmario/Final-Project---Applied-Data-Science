@@ -51,7 +51,7 @@ recommendations.
 
 [^1]: https://www.kaggle.com/c/house-prices-advanced-regression-techniques  
 
-#### 1. Housing Data
+## 1. Housing Data
 
 The dataset contains information on 1460 houses in Ames, Iowa. There are 81 
 variables in total, of which 37 are quantitative including the final Sales Price
@@ -120,7 +120,6 @@ library(devtools)
 all <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Raw/train.csv")
 set.seed(12345)
 in_train <- createDataPartition(y = all$SalePrice, p = 3 / 4, list = FALSE) # Split data into training and testing and recombine them
-str(in_train)
 training <- all[ in_train, ] # three fourth of data go to training
 testing  <- all[-in_train, ]
 
@@ -147,7 +146,7 @@ na_count <- data.frame(na_count)
 ### 1.2 Dealing with missing values
 
 We assessed the missing values and identified the ones that were not missing at random.
-These were modified separately and then a new dataset containing 1451 observations and 79 variables was created.
+These were modified separately and then a new dataset containing 1451 observations and 79 variables was created. More details of how we perform data data wrangling and deal with missing values are showed in the rmd file.
 
 ```{r, dealing with NAs}
 all_test <- all
@@ -284,7 +283,7 @@ na_count_test <- data.frame(na_count_test)
 
 write_excel_csv(all, "New_Data.csv")
 ```
-
+<br>
 ## 2. Inference 
 
 In this section we investigated the relationship between House sales Price and 
@@ -371,7 +370,8 @@ ggplot(neighb) + geom_col(aes(neighb$rn, y = neighb$mean.price,  fill = df$rn)) 
   ylab("Average Sales Price") + scale_y_continuous(labels = scales::dollar) +
   xlab("Neighborhood") + coord_flip()
 ```
-Table 1.1 summarizes the the average sales price for each neighborhood in Ames, Iowa.
+ <center>
+ `Figure 1.1 summarizes the the average sales price for each neighborhood in Ames, Iowa.`
 
 ```{r}
 ggplot(data=all, aes(x=(Neighborhood))) +
@@ -380,13 +380,8 @@ ggplot(data=all, aes(x=(Neighborhood))) +
         theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
         ggtitle("Distribution of houses count by neighborhood")
 ```
-
-
-Table 1.2 summarizes the number of houses and their average price per neighborhood.
-
-<center>
-
-`Table XX`
+ <center>
+ `Figure 1.2 summarizes the number of houses and their average price per neighborhood.`
 
 ```{r}
 #Distribution of houses per neighborhood category
@@ -403,7 +398,7 @@ pander(table(d_train_noNAs$Neighborhood, d_train_noNAs$Mean.price))
 
 Our dataset does not have the exact location of each house, so we used the average distance between the approximate center point of each neighborhood to the center of IUS campus. We used google maps to calculate the distance in miles by car and walking, as well as, the time it would take to go from the location to the IUS campus. Since the campus is fairly large we used Global Café, 513 Farm House Ln, Ames, IA, 50010, as our reference point representing the University. See annex for a full description of our distance 
 variables.
-
+<br>
 
 ### 2.4 Understanding key variables 
 
@@ -422,8 +417,11 @@ lines(density(all$SalePrice), col="blue", lwd=2)
 lines(density(all$SalePrice, adjust=2), lty="dotted")
 
 ```
-Table 2.1 summarizes the frequency of Sales Price for all houses.
+ <center>
+ `Figure 2.1 summarizes the frequency of Sales Price for all houses.`
+</center>
 
+<br>
 
 <h4> __Overall Quality__ </h4>
   
@@ -448,7 +446,11 @@ ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallQual), y=SalePrice)
         scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
         ggtitle("Boxplot - Sales Price and Overall Quality")
 ```
-Table 2.2 summarizes the relationship of Sales Price and Overall Quality Rating of houses.
+ <center>
+`Figure 2.2 summarizes the relationship of Sales Price and Overall Quality Rating of houses.`
+</center>
+
+<br>
 
 <h4> __OverallCond__ </h4>
 
@@ -472,7 +474,11 @@ ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallCond), y=SalePrice)
         scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
   ggtitle("Boxplot - Sales Price and Overall Condition") 
 ```
-Table 2.3 summarizes the relationship of Sales Price and Overall Condition Rating of houses.
+ <center>
+ `Figure 2.3 summarizes the relationship of Sales Price and Overall Condition Rating of houses.`
+ 
+</center>
+<br>
 
 <h4> __'GrLivArea' (Above Ground Living Area)__ </h4>
 
@@ -492,7 +498,11 @@ outlier1$Id
 all[c(524, 1299, 2550), c('SalePrice', 'GrLivArea', 'OverallQual')]
 
 ```
-Table 2.4 summarizes the relationship of Sales Price and Ground Living Area of houses.
+ <center>
+ `Figure 2.4 summarizes the relationship of Sales Price and Ground Living Area of houses.`
+</center>
+
+<br>
 
 <h4> __GarageCars__ </h4>
   
@@ -509,13 +519,14 @@ outlier2 <- all %>%
   filter(GarageCars == 3)%>%
   filter(SalePrice > 700000)
 
-outlier2$Id
 
 #check the other dimention information of outliers 
 all[c(524, 1299, 692, 1183), c('SalePrice', 'GrLivArea', 'OverallQual','GarageCars')] 
 
 ```
-Table 2.5 summarizes the relationship of Sales Price and Capacity of Garage of houses.
+ <center>
+ `Figure 2.5 summarizes the relationship of Sales Price and Capacity of Garage of houses.`
+</center>
 
 <h4> __BsmtFinSF1__ </h4>
 
@@ -530,7 +541,11 @@ ggplot(data=all[!is.na(all$SalePrice),], aes(x=BsmtFinSF1, y=SalePrice))+
   
 
 ```
-Table 2.6 summarizes the relationship of Sales Price and Basement Area of houses.
+<center>
+`Figure 2.6 summarizes the relationship of Sales Price and Basement Area of houses.`
+</center>
+
+<br>
 
 <h4> __Neighborhood__ </h4>
 
@@ -563,6 +578,7 @@ Neighborhood: Physical locations within Ames city limits
        Veenker	Veenker
 
 
+
 <h4> __YearBuilt__ </h4>
 YearBuilt: Original construction date
 ```{r, yearbuilt}
@@ -575,7 +591,11 @@ ggplot(data=all[!is.na(all$SalePrice),], aes(x=YearBuilt, y=SalePrice))+
   labs(x = 'Year of house built')
 
 ```
-Table 2.7 summarizes the relationship of Sales Price and Year of house built.
+<center>
+`Figure 2.7 summarizes the relationship of Sales Price and Year of house built.`
+</center>
+
+<br>
 
 ### 2.3 Inferential Models
 
@@ -707,8 +727,8 @@ cv.lasso <- cv.glmnet(x, y)
 #coef(cv.lasso, s = "lambda.min")
 ```
 <center>
-
-`Table XX: Lasso coefficients`
+`Figure 3.1 : Lasso coefficients`
+</center>
 
 The cross-validation plot suggests that the model works best when it has approximately 11 predictors (when using lambda for the most regularized model such that error is within one standard error of the minimum.). Lasso helped to reduce the number of variables by over 87%. We can use cross-validation to extract coefficients that collectively minimize mean squared error.
  
@@ -716,8 +736,10 @@ It includes the cross-validation curve (red dotted line), and upper and lower st
 
 ```{r}
 plot(cv.lasso) 
-title(sub = "Graph 3: Cross Validation for Lasso", cex = 1.5)
 ```
+ <center>
+ `Figure 3.2: Cross Validation for Lasso`
+ </center>
  
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 set.seed(12345) # = Seed for replication
@@ -817,10 +839,11 @@ cor_numVar <- cor_numVar[CorHigh, CorHigh]
 
 corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt", tl.cex = 0.7,cl.cex = .7, number.cex=.7)
 ```
-Graph 4: Correlation Table of Sales Price and all numeric variables
-
-Since there are several paris of varibles are highly correlated to each other, we can simply drop one of them.
-Therefore, I chose to drop 'TotalRmsAbvGrd'(vs GrLivArea); 'GarageArea'(vs GarageCars); 'TotalBsmtSF' (vs X1stFkrSF); 'YearRemodAdd'(vs YearBiult)
+ <center>
+ `Figure 4: Correlation Table of Sales Price and all numeric variables`
+ </center>
+ 
+Since there are several paris of varibles are highly correlated to each other, we can simply drop one of them.Therefore, I chose to drop 'TotalRmsAbvGrd'(vs GrLivArea); 'GarageArea'(vs GarageCars); 'TotalBsmtSF' (vs X1stFkrSF); 'YearRemodAdd'(vs YearBiult)
 
 ```{r drop variables and outliers}
 dropVars <- c('YearRemodAdd', 'GarageArea', 'TotalBsmtSF', 'TotalRmsAbvGrd')
@@ -844,11 +867,20 @@ imp_DF <- imp_DF[order(imp_DF$MSE, decreasing = TRUE),]
 
 ggplot(imp_DF[1:20,], aes(x = reorder(Variables, MSE), y = MSE, fill = MSE)) + geom_bar(stat = 'identity') + labs(x = 'Variables', y= '% increase MSE if variable is randomly permuted') + coord_flip() + theme(legend.position = "none")
 ```
-Graph 5: Varaible selection by random forest
-
+ <center>
+ `Figure 5: Varaible selection by random forest`
+ </center>
+ 
 ### 3.3 Predictive Models
 
-We pick variables that increase MSE if variable is randomly permuted greater than 10% (exclude two variables which are X1ndFlrSF and X2ndFlrSF which representing First/Second floor square feet, and are included in GrLivArea)
+We pick variables that increase MSE if variable is randomly permuted greater than 10% (exclude two variables which are X1ndFlrSF and X2ndFlrSF which representing First/Second floor square feet, and are included in GrLivArea)。 Therefore, we choose to include total 5 varibales: GarageCars+ BsmtFinSF1+ OverallQual + Neighborhood + GrLivArea in our models.
+
+For model evaluation, since our class labels are not uniformly distributed, we decided to focus on four key metrics:
+1) 'Overall classification accuracy' which is defined as the fraction of instances that are correctly classified;
+2) 'Precision' which is defined as the fraction of correct predictions for a certain class;
+3) 'Recall' which is the fraction of instances of a class that were correctly predicted;
+4) 'F1 score' which is defined as the harmonic mean (or a weighted average) of precision and recall.
+
 ```{r ols}
 
 train$Mean.price <- cut(train$SalePrice, breaks = c(100,200000,300000, Inf), labels = c("Lower", "Median ", "Higher") )
@@ -860,11 +892,7 @@ test1 <- train[1092:1447,]
 
 ```
 
-To generate robust results, we  includes all available predictors, an interaction between OverallQual and YearBuilt (because the quality of Older houses may not as good as the new ones) in a new model.
-
-```{r step function}
- # step function 
-
+```{r}
 train1 <- subset(train1, select = -c(Utilities,Street))
 test1 <- subset(test1, select = -c(Utilities,Street))
 test1 <- test1[!test1$Id == 1004,]
@@ -875,9 +903,11 @@ test1 <- test1[!test1$Id == 411,]
 test1 <- test1[!test1$Id == 251,]
 test1 <- test1[!test1$Id == 596,]
 ```
+<br>
 
-#### 3.3.1 Vector Generalized Linear Models
-```{r, Vector Generalized Linear Models}
+#### 3.3.1 Vector Generalized Linear Model
+Train the Vector Generalized Linear Model and summarize the prediction results of training set
+```{r, Vector Generalized Linear Models - train}
 library(VGAM)
 # with interaction term
 fit_log <- vglm(Mean.price ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLivArea, family=multinomial, data=train1)
@@ -892,9 +922,24 @@ predictions[which(predictions=="Median")] <- levels(train1$Mean.price)[2]
 predictions[which(predictions=="Higher")] <- levels(train1$Mean.price)[3]
 
 # summarize accuracy - training set
-tbl_log1 <- table(predictions, train1$Mean.price)
-tbl_log1
-sum(diag(tbl_log1))/sum(tbl_log1)
+tbl_log_train <- table(predictions, train1$Mean.price)
+tbl_log_train
+sum(diag(tbl_log_train))/sum(tbl_log_train)
+n = sum(tbl_log_train) # number of instances
+nc = nrow(tbl_log_train) # number of classes
+diag = diag(tbl_log_train) # number of correctly classified instances per class 
+rowsums = apply(tbl_log_train, 1, sum) # number of instances per class
+colsums = apply(tbl_log_train, 2, sum) # number of predictions per class
+p = rowsums / n # distribution of instances over the actual classes
+q = colsums / n # distribution of instances over the predicted classes
+precision = diag / colsums 
+recall = diag / rowsums 
+f1 = 2 * precision * recall / (precision + recall)
+data.frame(precision, recall, f1) 
+```
+
+Summarize the prediction results of Testing set
+```{r, Vector Generalized Linear Models- test}
 
 # make predictions - testing set
 probabilities <- predict(fit_log, newdata = test1, type="response")
@@ -904,35 +949,78 @@ predictions[which(predictions=="Median")] <- levels(test1$Mean.price)[2]
 predictions[which(predictions=="Higher")] <- levels(test1$Mean.price)[3]
 
 # summarize accuracy - testing set
-tbl_log2 <- table(predictions, test1$Mean.price)
-tbl_log2
-sum(diag(tbl_log2))/sum(tbl_log2)
+tbl_log_test <- table(predictions, test1$Mean.price)
+tbl_log_test
+sum(diag(tbl_log_test))/sum(tbl_log_test)
+
+n = sum(tbl_log_test) # number of instances
+nc = nrow(tbl_log_test) # number of classes
+diag = diag(tbl_log_test) # number of correctly classified instances per class 
+rowsums = apply(tbl_log_test, 1, sum) # number of instances per class
+colsums = apply(tbl_log_test, 2, sum) # number of predictions per class
+p = rowsums / n # distribution of instances over the actual classes
+q = colsums / n # distribution of instances over the predicted classes
+precision = diag / colsums 
+recall = diag / rowsums 
+f1 = 2 * precision * recall / (precision + recall)
+data.frame(precision, recall, f1) 
 ```
+<br>
 
 #### 3.3.2 Linear Discriminant Analysis
+Train the Linear Discriminant Analysis Model and summarize the prediction results of training set
 ```{r lda}
 library(MASS)
 LDA <- lda(Mean.price ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLivArea,data = train1)
 
 #  make predictions and summarize accuracy - training set
-y_hat_LDA <- predict(LDA, newdata = train1)
-summary(y_hat_LDA$posterior)
-z_LDA <- y_hat_LDA$class
-tbl_LDA1 <- table(train1$Mean.price, z_LDA)
+y_hat_LDA_train <- predict(LDA, newdata = train1)
+summary(y_hat_LDA_train$posterior)
+z_LDA_train <- y_hat_LDA_train$class
+tbl_LDA1 <- table(train1$Mean.price, z_LDA_train)
 tbl_LDA1
 sum(diag(tbl_LDA1))/sum(tbl_LDA1)
 
-# make predictions and summarize accuracy - testing set
-y_hat_LDA <- predict(LDA, newdata = test1)
-summary(y_hat_LDA$posterior)
-z_LDA <- y_hat_LDA$class
-tbl_LDA <- table(test1$Mean.price, z_LDA)
-tbl_LDA
-sum(diag(tbl_LDA))/sum(tbl_LDA)
+n = sum(tbl_LDA1) # number of instances
+nc = nrow(tbl_LDA1) # number of classes
+diag = diag(tbl_LDA1) # number of correctly classified instances per class 
+rowsums = apply(tbl_LDA1, 1, sum) # number of instances per class
+colsums = apply(tbl_LDA1, 2, sum) # number of predictions per class
+p = rowsums / n # distribution of instances over the actual classes
+q = colsums / n # distribution of instances over the predicted classes
+precision = diag / colsums 
+recall = diag / rowsums 
+f1 = 2 * precision * recall / (precision + recall)
+data.frame(precision, recall, f1) 
 ```
 
-#### 3.3.3 Support Vector Machine
+Summarize the prediction results of testing set
+```{r}
 
+# make predictions and summarize accuracy - testing set
+y_hat_LDA_test <- predict(LDA, newdata = test1)
+summary(y_hat_LDA_test$posterior)
+z_LDA_test <- y_hat_LDA_test$class
+tbl_LDA <- table(test1$Mean.price, z_LDA_test)
+tbl_LDA
+sum(diag(tbl_LDA))/sum(tbl_LDA)
+
+n = sum(tbl_LDA) # number of instances
+nc = nrow(tbl_LDA) # number of classes
+diag = diag(tbl_LDA) # number of correctly classified instances per class 
+rowsums = apply(tbl_LDA, 1, sum) # number of instances per class
+colsums = apply(tbl_LDA, 2, sum) # number of predictions per class
+p = rowsums / n # distribution of instances over the actual classes
+q = colsums / n # distribution of instances over the predicted classes
+precision = diag / colsums 
+recall = diag / rowsums 
+f1 = 2 * precision * recall / (precision + recall)
+data.frame(precision, recall, f1) 
+```
+<br>
+
+#### 3.3.3 Support Vector Machine
+Train the Support Vector Machine Model and summarize the prediction results of training set
 ```{r svm}
 library(e1071)
 
@@ -941,51 +1029,129 @@ classifier = svm(formula = Mean.price ~ . ,data = train1[,-74] ,
                  kernel = 'linear')
 
 # make predictions and summarize accuracy - training set
-y_pred = predict(classifier, newdata = train1[,-c(74,75)])
-cm1 = table(train1[,75], y_pred)
+y_pred_train = predict(classifier, newdata = train1[,-c(74,75)])
+cm1 = table(train1[,75], y_pred_train)
 cm1
 sum(diag(cm1))/sum(cm1)
 
+n = sum(cm1) # number of instances
+nc = nrow(cm1) # number of classes
+diag = diag(cm1) # number of correctly classified instances per class 
+rowsums = apply(cm1, 1, sum) # number of instances per class
+colsums = apply(cm1, 2, sum) # number of predictions per class
+p = rowsums / n # distribution of instances over the actual classes
+q = colsums / n # distribution of instances over the predicted classes
+precision = diag / colsums 
+recall = diag / rowsums 
+f1 = 2 * precision * recall / (precision + recall)
+data.frame(precision, recall, f1) 
+```
+Summarize the prediction results of testing set
+```{r}
+
 # Prmake predictions and summarize accuracy - test set
-y_pred = predict(classifier, newdata = test1[,-c(74,75)])
-cm = table(test1[,75], y_pred)
+y_pred_test = predict(classifier, newdata = test1[,-c(74,75)])
+cm = table(test1[,75], y_pred_test)
 cm
 sum(diag(cm))/sum(cm)
+n = sum(cm) # number of instances
+nc = nrow(cm) # number of classes
+diag = diag(cm) # number of correctly classified instances per class 
+rowsums = apply(cm, 1, sum) # number of instances per class
+colsums = apply(cm, 2, sum) # number of predictions per class
+p = rowsums / n # distribution of instances over the actual classes
+q = colsums / n # distribution of instances over the predicted classes
+precision = diag / colsums 
+recall = diag / rowsums 
+f1 = 2 * precision * recall / (precision + recall)
+data.frame(precision, recall, f1) 
 ```
+<br>
 
 #### 3.3.4 Random Forest Model
-
+Train the Random Forest Model and summarize the prediction results of training set
 ```{r rf predict}
 
 RF <- randomForest(x=train1[, (names(train1) %in% c("OverallQual","BsmtFinSF1","GarageCars",'Neighborhood','GrLivArea'))], y=train1$Mean.price, ntree=150,importance=TRUE)
-y_pred1 = predict(RF, newdata = train1[-c(74,75)])
-y_pred2 = predict(RF, newdata = test1[-c(74,75)])
+y_pred_train = predict(RF, newdata = train1[-c(74,75)])
+y_pred_test = predict(RF, newdata = test1[-c(74,75)])
 
 # make predictions and summarize accuracy - training set
-rf_cm1 = table(train1[,75], y_pred1)
+rf_cm1 = table(train1[,75], y_pred_train)
 rf_cm1
 sum(diag(rf_cm1))/sum(rf_cm1)
 
-# make predictions and summarize accuracy - testing set
-rf_cm = table(test1[,75], y_pred2)
-rf_cm
-sum(diag(rf_cm))/sum(rf_cm)
-plot(RF)
-
+n = sum(rf_cm1) # number of instances
+nc = nrow(rf_cm1) # number of classes
+diag = diag(rf_cm1) # number of correctly classified instances per class 
+rowsums = apply(rf_cm1, 1, sum) # number of instances per class
+colsums = apply(rf_cm1, 2, sum) # number of predictions per class
+p = rowsums / n # distribution of instances over the actual classes
+q = colsums / n # distribution of instances over the predicted classes
+precision = diag / colsums 
+recall = diag / rowsums 
+f1 = 2 * precision * recall / (precision + recall)
+data.frame(precision, recall, f1) 
 ```
 
+Summarize the prediction results of training set
+```{r}
+# make predictions and summarize accuracy - testing set
+rf_cm = table(test1[,75], y_pred_test)
+rf_cm
+sum(diag(rf_cm))/sum(rf_cm)
+
+n = sum(rf_cm) # number of instances
+nc = nrow(rf_cm) # number of classes
+diag = diag(rf_cm) # number of correctly classified instances per class 
+rowsums = apply(rf_cm, 1, sum) # number of instances per class
+colsums = apply(rf_cm, 2, sum) # number of predictions per class
+p = rowsums / n # distribution of instances over the actual classes
+q = colsums / n # distribution of instances over the predicted classes
+precision = diag / colsums 
+recall = diag / rowsums 
+f1 = 2 * precision * recall / (precision + recall)
+data.frame(precision, recall, f1) 
+
+plot(RF)
+```
+ <center>
+ `Graph 6: Random Forest Error`
+ </center>
+ 
+ 
+<br>
+
 ### 3.4 Results
+
+#####Vector Generalized Linear Model
 The prediction accuracy of Vector Generalized Linear Model in training set is 0.8937729.
 The prediction accuracy of Vector Generalized Linear Model in testing set is 0.8997135.
+For training set, as the Vector Generalized Linear classifier attempted to predict 'Lower' class most of the time, better performance in metrics for 'Lower' was achieved while the other two categories were poorly predicted. For testing set,Vector Generalized Linear Model best performed in 'Lower' category while poorly performed in two other categories. There were also a trade off between 'Median' and 'Higher' groups as the recall for 'Medium' group is higher(0.81) but the precission(0.69) is poorer, just opposite to 'Higher' which has higher precision(0.84) but lower recall(0.72). As consequence, it results only a fair overal prediction accuracy.
 
-The prediction accuracy of Linear Discriminant Analysisr Model in training set is 0.8424908.
+<br>
+
+####Linear Discriminant Analysis Model
+The prediction accuracy of Linear Discriminant Analysis Model in training set is 0.8424908.
 The prediction accuracy of Linear Discriminant Analysis Model in testing set is 0.8681948.
+For training set, as the Linear Discriminant Analysis classifier attempted to predict 'Lower' class most of the time, better performance in metrics for 'Lower' was achieved while the other two categories were much poorly predicted. For testing set, Linear Discriminant Analysis Model best performed in 'Lower' category while poorly performed in two other categories. As consequence, it results a poor overal prediction accuracy.
 
+<br>
+
+####Support Vector Machine Model
 The prediction accuracy of Support Vector Machine Model in training set is 0.9798535.
 The prediction accuracy of Support Vector Machine Model in testing set is 0.9169054.
+For testing set, Support Vector Machine Model best performed in 'Lower' category while poorly performed in two other categories. There were also a trade off between 'Median' and 'Higher' groups as the recall for 'Higher' group is higher(0.84) but the precission(0.78) is poorer, just opposite to 'Median' which has higher precision but lower recall.
 
+<br>
+
+#### Random Forest Model
 The prediction accuracy of Random Forest Model in training set is 0.9945055.
 The prediction accuracy of Random Forest Model in testing set is 0.8939828.
+For training set, Random Forest Model gave the best fitting in all three groups 
+For testing set, Random Forest Model best performed in 'Lower' category while poorly performed in two other categories as precission for 'Median' and 'Higher' groups are around 0.7 ~ 0.8.
+
+<br>
 
 To conclude, Vector Generalized Linear Model and Linear Discriminant Analysisr Model gave results with fair accuracy and no obvious underfitting were observed. The Support Vector Machine Model gave the best accuracy in testing set (0.917) and has small overfitting problem in training set (0.980). The Random Forest Model gave the best accuracy in training set (0.995) almost 100%, but significant overfitting of training set was observed as the accuracy for testing set is only 0.894. Therefore, we concluded that the Support Vector Machine Model is our best predictive model.
 
