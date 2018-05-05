@@ -804,7 +804,7 @@ We would like to see What numeric variables correlated with SalePrice.
 According to the correlation table, variable 'Overall Quality'(Overall material and finish quality), the 'GrLivArea' (‘Above Grade’ Living Area) and 'GarageCars'(Size of garage in car capacity) are the top 3 variables that highly correlated to SalePrice.
 For the rest,it is also clear the multicollinearity is an issue. For example: the correlation between GarageCars and GarageArea is very high (0.89), and both have similar (high) correlations with SalePrice. The other 6 six variables with a correlation higher than 0.5 with SalePrice are: -TotalBsmtSF: Total square feet of basement area -1stFlrSF: First Floor square feet -FullBath: Full bathrooms above grade -TotRmsAbvGrd: Total rooms above grade (does not include bathrooms) -YearBuilt: Original construction date -YearRemodAdd: Remodel date (same as construction date if no remodeling or additions)
 
-```{r correlation2, eval=FALSE, include=FALSE}
+```{r correlation2}
 train$GarageYrBlt <- as.integer(train$GarageYrBlt)
 numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
 factorVars <- which(sapply(train, is.factor)) #index vector factor variables
@@ -836,8 +836,6 @@ write_csv(train, 'Final_data.csv')
 The correlation table above provide a good overview of the most important numeric variables and multicolinerity among those variables. Next, I want to get an overview of the most important variables including the categorical variables.
 ```{r rf again}
 train <- read.csv('Final_data.csv')
-# cat('There are', length(numericVars), 'numeric variables, and', length(factorVars), 'categoric variables')
-
 set.seed(123)
 quick_RF <- randomForest(x = train[, -76], y = train$SalePrice, ntree = 200,importance = TRUE)
 imp_RF <- importance(quick_RF)
@@ -850,7 +848,7 @@ Graph 5: Varaible selection by random forest
 
 ### 3.3 Predictive Models
 
-We pick variables that increase MSE if variable is randomly permuted greater than 10% (exclude two variables which are X1ndFlrSF and X2ndFlrSF which representing First/Second floor square feet, and are included in GrLivArea) and run an OLS regression. The model has an (adjusted) R-squared that is greater than 0.8
+We pick variables that increase MSE if variable is randomly permuted greater than 10% (exclude two variables which are X1ndFlrSF and X2ndFlrSF which representing First/Second floor square feet, and are included in GrLivArea)
 ```{r ols}
 
 train$Mean.price <- cut(train$SalePrice, breaks = c(100,200000,300000, Inf), labels = c("Lower", "Median ", "Higher") )
@@ -860,15 +858,6 @@ a <- train%>%
 train1 <- train[1:1092,]
 test1 <- train[1092:1447,]
 
-ols <- lm(Mean.price ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLivArea + OverallQual*YearBuilt ,data = train1)
-summary(ols)$adj.r.squared
-
-y_hat_ols <- predict(ols, newdata = test1)
-y_hat_ols
-summary(y_hat_ols)
-z_ols <- as.integer(y_hat_ols > 1)
-z_ols
-table(test1$Mean.price, z_ols)
 ```
 
 To generate robust results, we  includes all available predictors, an interaction between OverallQual and YearBuilt (because the quality of Older houses may not as good as the new ones) in a new model.
@@ -931,7 +920,7 @@ summary(y_hat_LDA$posterior)
 z_LDA <- y_hat_LDA$class
 tbl_LDA1 <- table(train1$Mean.price, z_LDA)
 tbl_LDA1
-sum(diag(tbl_LDA1))/sum(tbl_LDA)
+sum(diag(tbl_LDA1))/sum(tbl_LDA1)
 
 # make predictions and summarize accuracy - testing set
 y_hat_LDA <- predict(LDA, newdata = test1)
@@ -943,7 +932,7 @@ sum(diag(tbl_LDA))/sum(tbl_LDA)
 ```
 
 #### 3.3.3 Support Vector Machine
-Overfitting of training set
+
 ```{r svm}
 library(e1071)
 
@@ -965,6 +954,7 @@ sum(diag(cm))/sum(cm)
 ```
 
 #### 3.3.4 Random Forest Model
+
 ```{r rf predict}
 
 RF <- randomForest(x=train1[, (names(train1) %in% c("OverallQual","BsmtFinSF1","GarageCars",'Neighborhood','GrLivArea'))], y=train1$Mean.price, ntree=150,importance=TRUE)
@@ -997,7 +987,7 @@ The prediction accuracy of Support Vector Machine Model in testing set is 0.9169
 The prediction accuracy of Random Forest Model in training set is 0.9945055.
 The prediction accuracy of Random Forest Model in testing set is 0.8939828.
 
-To conclude, Vector Generalized Linear Model and Linear Discriminant Analysisr Model gave results with fair accuracy and no obvious underfitting were observed. The Support Vector Machine Model gave the best accuracy in testing set (0.917) and has small overfitting problem in training set (0.980). The Random Forest Model gave the best accuracy in training set (0.995) almost 100%, but significant overfitting of training set was observed as the accuracy for testing set is only 0.894.
+To conclude, Vector Generalized Linear Model and Linear Discriminant Analysisr Model gave results with fair accuracy and no obvious underfitting were observed. The Support Vector Machine Model gave the best accuracy in testing set (0.917) and has small overfitting problem in training set (0.980). The Random Forest Model gave the best accuracy in training set (0.995) almost 100%, but significant overfitting of training set was observed as the accuracy for testing set is only 0.894. Therefore, we concluded that the Support Vector Machine Model is our best predictive model.
 
 ## 4. Conclusion
 
