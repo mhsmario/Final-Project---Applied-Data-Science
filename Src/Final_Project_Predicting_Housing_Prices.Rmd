@@ -2,11 +2,12 @@
 title: "QMSS5069 - Advanced Data Science Final Project: Predicting Housing Prices"
 author: "Lizhizi Cui (lc3268) and Mario Saraiva (mhs2195)"
 date: "May 2018"
-output: 
-    html_document:
-    code_folding: hide
+output:
+  html_document:
+    df_print: paged
     toc: yes
     toc_float: yes
+    code_folding: hide
 ---
 
 <center>
@@ -32,18 +33,17 @@ knitr::opts_chunk$set(
 
 ##Introduction
 
-#### Overview 
-
-This is a consulting project where our main goal is to advise our client on where
-he should buy a house and how much a house he likes may cost. Our client, a 
-professor at the Utah State University, approached our team seeking for advice on
+In this consulting project, our main goal is to advise our client on where
+is the best neighborhood to buy a house and how much a house he likes may cost.
+Our client, a professor at the Utah State University, approached our team seeking for advice on
 where he should buy his next house in hopes to sell it in a couple of years and
 profit out of the transaction. The professor has a strict preference for houses
-within the city of Ames, IA and he is not interested buying anywhere else.
+within the city of Ames, IA and he is not interested buying anywhere else. The client
+has a price preference for houses between $180,000 - 210,000.
 
-To best attend to our clients request, we explored the housing data on Ames, IA 
+To best attend to our client's request, we explored the housing data on Ames, IA 
 through different visualizations and a correlation plot to understand the dataset
-[^1]. Then different inference models were constructured to verify our hypothesis. 
+[^1]. Then different inference models were constructed to verify our hypothesis. 
 Once the hypothesis had been tested we proceeded to the predictive modeling section,
 where through various machine learning models we predict the final sales price of
 a house. The last section of this document presents our conclusions and
@@ -59,65 +59,50 @@ of the house, 43 are categorical + the Id number of each house. For more additio
 details on the available variables please refer to the annex section.
 
 ```{r setup, include=FALSE}
-library(glmnet)
-library(purrr)
-library(tidyr)
-library(readr)
-library(corrplot)
-library(shiny)
-library(dplyr)
-library(ggplot2)
-library(e1071)
-library(glmnet)
-library(mice)
-library(lattice)
-library(VIM)
-library(caret)
-library(stargazer)
-library(gam)
-library(flam)
+
+#install.packages(c("bartMachine","caret","corrplot","corrplot","corrplot","devtools","dplyr","e1071","flam","gam","ggfortify","ggplot2","ggrepel","glmnet","gridExtra","here","ISLR","knitr","lattice","mice","pander","psych","purrr","randomForest","RColorBrewer","readr","Rmisc","rsconnect","scales","shiny","stargazer","tidyr","tree","VGAM","VIM"))
+
 library(bartMachine)
-library(tree)
-library(ISLR)
-library(RColorBrewer)
+library(caret)
+library(corrplot)
+library(data.table)
+library(devtools)
+library(dplyr)
+library(e1071)
+library(flam)
+library(forcats)
+library(gam)
 library(ggfortify)
-library(scales)
-library(stargazer)
-library(rsconnect)
-library(knitr)
-library(gridExtra)
-library(scales)
-library(Rmisc)
+library(ggplot2)
 library(ggrepel)
-library(randomForest)
+library(glmnet)
+library(gridExtra)
+library(here)
+library(ISLR)
+library(knitr)
+library(lattice)
+library(mice)
+library(pander)
 library(psych)
 library(purrr)
-library(tidyr)
-library(ggplot2)
-library(readr)
-library(dplyr)
-library(corrplot)
+library(randomForest)
 library(RColorBrewer)
-library(shiny)
-library(ggfortify)
-library(pander)
-library(purrr)
-library(tidyr)
-library(ggplot2)
 library(readr)
-library(dplyr)
-library(corrplot)
-library(RColorBrewer)
+library(Rmisc)
+library(rsconnect)
+library(scales)
 library(shiny)
-library(ggfortify)
-library(pander)
-library(here)
-library(devtools)
+library(stargazer)
+library(tidyr)
+library(tree)
+library(VGAM)
+library(VIM)
+
 ```
 
 ```{r}
 #all <- read.csv("train.csv")
-all <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Raw/train.csv")
+all <- read.csv("train.csv")
 set.seed(12345)
 in_train <- createDataPartition(y = all$SalePrice, p = 3 / 4, list = FALSE) # Split data into training and testing and recombine them
 training <- all[ in_train, ] # three fourth of data go to training
@@ -131,31 +116,51 @@ all <- rbind(training, testing)
 We noticed a significant number of missing variables in the dataset. The variables with the highest number of missingness were: "PoolQC", "MiscFeature", "Alley", "Fence", "FireplaceQu", "LotFrontage". Table X summarizes our findings.
  
 ```{r, warning=FALSE, message=FALSE}
-na_count <-sapply(all, function(y) sum(length(which(is.na(y)))))
+na_count <- sapply(all, function(y) sum(length(which(is.na(y)))))
 na_count <- data.frame(na_count)
 ```
 
 <center>
 
-`Table X: Missing Data`
+`Table 1: Missing Data`
 
-`r pander(na_count)`
+| Variable     | # of Nas |
+|--------------|----------|
+| PoolQC       | 1453     |
+| MiscFeature  | 1406     |
+| Alley        | 1369     |
+| Fence        | 1179     |
+| FireplaceQu  | 690      |
+| LotFrontage  | 259      |
+| GarageType   | 81       |
+| GarageYrBlt  | 81       |
+| GarageFinish | 81       |
+| GarageQual   | 81       |
+| GarageCond   | 81       |
+| BsmtExposure | 38       |
+| BsmtFinType2 | 38       |
+| BsmtQual     | 37       |
+| BsmtCond     | 37       |
+| BsmtFinType1 | 37       |
+| MasVnrType   | 8        |
+| MasVnrArea   | 8        |
+| Electrical   | 1        |
 
 </center>
 
 ### 1.2 Dealing with missing values
 
 We assessed the missing values and identified the ones that were not missing at random.
-These were modified separately and then a new dataset containing 1451 observations and 79 variables was created. More details of how we perform data data wrangling and deal with missing values are showed in the rmd file.
+These were modified separately and then a new dataset containing 1451 observations and 79 variables was created. More details of how we perform data wrangling and deal with missing values are shown in the rmd file.
 
-```{r, dealing with NAs}
+```{r, message=FALSE, warning=FALSE}
 all_test <- all
 
 # Add new levels and change NA into 'None' level
-addLevel <- function(x, newlevel=NULL) {
-  if(is.factor(x)) {
+addLevel <- function(x, newlevel = NULL) {
+  if (is.factor(x)) {
     if (is.na(match(newlevel, levels(x))))
-      return(factor(x, levels=c(levels(x), newlevel)))
+      return(factor(x, levels = c(levels(x), newlevel)))
   }
   return(x)
 }
@@ -165,11 +170,11 @@ all_test$PoolQC <- addLevel(all_test$PoolQC, "TA")
 all_test$PoolQC <- ifelse(is.na(all$PoolQC), "None", paste(all$PoolQC))
 
 Qualities <- c('None' = 0, 'Po' = 1, 'Fa' = 2, 'TA' = 3, 'Gd' = 4, 'Ex' = 5)
-all_test$PoolQC<- revalue(all_test$PoolQC, Qualities)
+all_test$PoolQC <- revalue(all_test$PoolQC, Qualities)
 all_test$PoolQC <- as.factor(all_test$PoolQC)
 ```
 
-```{r dealing with NAs 2}
+```{r dealing with NAs 2, message=FALSE, warning=FALSE}
 
 # Add new levels and change NA into 'None' level, meaning No Miscellaneous Feature
 all_test$MiscFeature <- addLevel(all_test$MiscFeature, "None")
@@ -248,20 +253,20 @@ all_test$BsmtFinType2 <- ifelse(is.na(all_test$BsmtFinType2), "None", paste(all_
 all_test$BsmtFinType2 <- as.factor(all_test$BsmtFinType2)
 
 # Set Basement Area equals 0 for houses which do not have basement
-all_test$BsmtFinSF1[is.na(all_test$BsmtFinSF1)] <-0
-all_test$BsmtFinSF2[is.na(all_test$BsmtFinSF2)] <-0
-all_test$BsmtUnfSF[is.na(all_test$BsmtUnfSF)] <-0
+all_test$BsmtFinSF1[is.na(all_test$BsmtFinSF1)] <- 0
+all_test$BsmtFinSF2[is.na(all_test$BsmtFinSF2)] <- 0
+all_test$BsmtUnfSF[is.na(all_test$BsmtUnfSF)] <- 0
 
 # Set Basement Area equals 0 for houses which has zero linear feet of street connected to property
-all_test$LotFrontage[is.na(all_test$LotFrontage)] <-0
+all_test$LotFrontage[is.na(all_test$LotFrontage)] <- 0
 
 drop.na.columns <- c( "MasVnrType","LotFrontage")
-all_test<- all_test[ , !(names(all_test) %in% drop.na.columns)]
+all_test <- all_test[ , !(names(all_test) %in% drop.na.columns)]
 all_test <- na.omit(all_test)
 
 ```
 
-```{r dealing with NAs 3}
+```{r dealing with NAs 3, message=FALSE, warning=FALSE}
 
 all <- all_test
 
@@ -277,45 +282,50 @@ all$Condition1 <- as.factor(all$Condition1)
 all$Condition2 <- as.factor(all$Condition2)
 all$GarageArea <- as.numeric(all$GarageArea)
 
-na_count_test <-sapply(all, function(y) sum(length(which(is.na(y)))))
+na_count_test <- sapply(all, function(y) sum(length(which(is.na(y)))))
 na_count_test <- data.frame(na_count_test)
 
 
 write_excel_csv(all, "New_Data.csv")
 ```
 <br>
+
+***
+
 ## 2. Inference 
 
-In this section we investigated the relationship between House sales Price and 
-distance from Utah State University. Distance between the house is an important
-factor to our client. The professor emphasized that at this stage he wants to 
-find out if it is better to buy a house near campus or not. 
+In this section, we investigated the relationship between House sales Price and distance
+from Utah State University. The distance between the house is an important
+factor to our client. The professor emphasized that at this stage he wants to find
+out if it is better to buy a house near campus or not. 
 
 ### 2.1 Hypothesis
 
-Our initial hypothesis is that there is a positive association 
-between final sales price and distance from ISU. In other words, houses that are
-further away from the university are, in general, sold for a higher price than 
-those in neighborhoods closer to ISU. Without doing any data analysis, we know 
-that there is a golf course at the opposite end of city from the University, 
+Our initial hypothesis is that there is a positive association between
+the final sales price and distance from ISU. In other words, houses that are
+further away from the university are, in general, sold for a higher price than those
+in neighborhoods closer to ISU. Without doing any data analysis, we know 
+that there is a golf course at the opposite end of the city from the University, 
 which could be evidence supporting our hypothesis. Additionally, student housing
 usually has a lower price in comparison with other non-student houses, if this 
 is true in Ames, then our hypothesis should be correct.
 
+
 <center>
   __Hypothesis:__ 
-</center>
+
   
 $$Sales Price = \beta_0 + \beta_{Dist. ISU} + \beta_{House Quality} + \beta_{Size} + ... + \mu$$
-Where $\beta_{Dist. ISU}$ is positive. 
+*Where $\beta_{Dist. ISU}$ is positive. 
 
+</center>
 ```{r, message=FALSE, warning=FALSE}
 #Load treated and processed data 'New_Data.csv'
 New_Data <- read_csv("New_Data.csv")
 #Load the data with distance between ISU and
 
 #distance <- read_csv("distance.csv")
-distance <- read_csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Processed/distance.csv")
+distance <- read_csv("distance.csv")
 #Add the distance data to both Train and Test datasets.
 d_train <- left_join(New_Data, distance, by = "Neighborhood")
 ```
@@ -327,18 +337,15 @@ d_train_noNAs <- na.omit(d_train)
 
 df <- data.frame(tapply(d_train_noNAs$SalePrice, d_train_noNAs$Neighborhood, mean))
 
-library(data.table)
-library(forcats)
+df22 <- data.frame(tapply(d_train_noNAs$OverallCond, d_train_noNAs$Neighborhood, mean))
 
 neighb <- setDT(df, keep.rownames = TRUE)[]
 colnames(neighb)[2] <- "mean.price"
 
 #Order values in ascending order.
 neighb <- neighb[order(mean.price), ]
-neighb$rn <- factor(neighb$rn, levels=unique(as.character(neighb$rn)) )
+neighb$rn <- factor(neighb$rn, levels = unique(as.character(neighb$rn)) )
 
-
-  
 #Create categories for mean sales price of the neighborhood.
   
 d_train_noNAs$Mean.price <- cut(d_train_noNAs$SalePrice, breaks = c(100,200000,300000, Inf), labels = c("Lower", "Median ", "Higher") )
@@ -354,15 +361,15 @@ According to Data USA, the median property value in Ames, IA is $174,300, and th
 [^2]: https://datausa.io/profile/geo/ames-ia/ 
 
 
-From the data we can see that three neighborhoods - NoRidge, NridgHt, and StoneBr
-- have the highest average sales price, \$300,000 or more. We classified these 
-three neighborhoods as "High", in regards to their average sales price. Similarly,
-we identified two other stratas of neighborhoods one as "Medium" with the average
-sales price between $150,000 and \$300,000, and "Low" all neighborhoods with 
-average sales price up to $150,000.
+From the data, we can see that three neighborhoods - NoRidge, NridgHt, and StoneBr
+- have the highest average sales price, \$300,000 or more. We classified these three
+neighborhoods as "High", in regards to their average sales price. Similarly,
+we identified two other strata of neighborhoods one as "Medium" with the average
+sales price between $150,000 and \$300,000, and "Low" all neighborhoods with average
+sales price up to $150,000.
 
-  
-```{r}
+<center>
+```{r, message=FALSE, warning=FALSE}
 #plot the results
 ggplot(neighb) + geom_col(aes(neighb$rn, y = neighb$mean.price,  fill = df$rn)) + 
   coord_flip() + 
@@ -373,28 +380,29 @@ ggplot(neighb) + geom_col(aes(neighb$rn, y = neighb$mean.price,  fill = df$rn)) 
  <center>
  `Figure 1.1 summarizes the the average sales price for each neighborhood in Ames, Iowa.`
 
-```{r}
-ggplot(data=all, aes(x=(Neighborhood))) +
-        geom_histogram(stat='count')+
-        geom_label(stat = "count", aes(label = ..count.., y = ..count..), size=3)+
+```{r, message=FALSE, warning=FALSE}
+ggplot(data = all, aes(x = (Neighborhood))) +
+        geom_histogram(stat = 'count') +
+        geom_label(stat = "count", aes(label = ..count.., y = ..count..), size = 3) +
         theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
         ggtitle("Distribution of houses count by neighborhood")
 ```
- <center>
+
  `Figure 1.2 summarizes the number of houses and their average price per neighborhood.`
 
 ```{r}
 #Distribution of houses per neighborhood category
 pander(table(d_train_noNAs$Neighborhood, d_train_noNAs$Mean.price))
 ```
+`Table 2: Number of houses by price category and neighborhood`
 
 </center>
 
 ###2.3 Hypothesis
   
- As seen in the 'Context' section, the city of Ames is a college city, with approximately 35,993 students (exluding postdocs), accouting for more than 57% of the population. This is a conservative estimate since we are not including the university's staff. Arguebly, at least 60% of Ames works and/or studies at the Iowa State University.
+ As seen in the 'Context' section, the city of Ames is a college city, with approximately 35,993 students (excluding postdocs), accounting for more than 57% of the population. This is a conservative estimate since we are not including the university's staff. Arguably, at least 60% of Ames works and/or studies at the Iowa State University.
 
-`Then, what is the relationship between distance from the university and the final sales price of a house?`
+`Then, what is the relationship between the distance from the university and the final sales price of a house?`
 
 Our dataset does not have the exact location of each house, so we used the average distance between the approximate center point of each neighborhood to the center of IUS campus. We used google maps to calculate the distance in miles by car and walking, as well as, the time it would take to go from the location to the IUS campus. Since the campus is fairly large we used Global Café, 513 Farm House Ln, Ames, IA, 50010, as our reference point representing the University. See annex for a full description of our distance 
 variables.
@@ -406,15 +414,15 @@ variables.
 
 SalePrice: the property's sale price in dollars
  
-```{r SalesPrice}
+```{r SalesPrice, message=FALSE, warning=FALSE}
 summary(all$SalePrice)
 
 hist(all$SalePrice, 
      main = 'Histogram of Sale Price',
      xlab = 'Sale Price',
-     breaks=seq(30000, 760000, 5000),prob=TRUE)
-lines(density(all$SalePrice), col="blue", lwd=2)       
-lines(density(all$SalePrice, adjust=2), lty="dotted")
+     breaks = seq(30000, 760000, 5000),prob = TRUE)
+lines(density(all$SalePrice), col = "blue", lwd = 2)       
+lines(density(all$SalePrice, adjust = 2), lty = "dotted")
 
 ```
  <center>
@@ -438,12 +446,12 @@ OverallQual: Rates the overall material and finish of the house
        2	Poor
        1	Very Poor
        
-Overall Quality is observed to have positive correlation with SalePrice. It does not seem to have noticeble outliers apart from a point in level 4. 
+Overall Quality is observed to have a positive correlation with SalePrice. It does not seem to have noticeable outliers apart from a point in level 4. 
 
-```{r}
-ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallQual), y=SalePrice))+
-        geom_boxplot() + labs(x='Overall Quality') +
-        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
+```{r, message=FALSE, warning=FALSE}
+ggplot(data = all[!is.na(all$SalePrice),], aes(x = factor(OverallQual), y = SalePrice)) +
+        geom_boxplot() + labs(x = 'Overall Quality') +
+        scale_y_continuous(breaks =  seq(0, 800000, by = 100000), labels = comma) +
         ggtitle("Boxplot - Sales Price and Overall Quality")
 ```
  <center>
@@ -468,10 +476,10 @@ OverallCond: Rates the overall condition of the house:
        1	Very Poor
        
 
-```{r SalesPrice and Condition}
-ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallCond), y=SalePrice))+
-        geom_boxplot() + labs(x='Overall Condition')+
-        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
+```{r SalesPrice and Condition, message=FALSE, warning=FALSE}
+ggplot(data = all[!is.na(all$SalePrice),], aes(x = factor(OverallCond), y = SalePrice)) +
+        geom_boxplot() + labs(x = 'Overall Condition') +
+        scale_y_continuous(breaks = seq(0, 800000, by = 100000), labels = comma) +
   ggtitle("Boxplot - Sales Price and Overall Condition") 
 ```
  <center>
@@ -483,40 +491,44 @@ ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(OverallCond), y=SalePrice)
 <h4> __'GrLivArea' (Above Ground Living Area)__ </h4>
 
 GrLivArea: Above ground living area square feet  
-GrLivArea is observed to have positive correlation with SalePrice, which make sense since big houses are generally more expensive than smaller. One thing worth noticing is that there are two houses with really large living areas and low SalePrice (potential to be outliers). I checked the data and found out they are houses 524, 1299 and 2550(NA for SalePrice).
+GrLivArea is observed to have a positive correlation with SalePrice, which make sense since big houses are generally more expensive than smaller. One thing worth noticing is that there are two houses with really large living areas and low SalePrice (potential to be outliers). I checked the data and found out they are houses 524, 1299 and 2550(NA for SalePrice).
 
-```{r}
-ggplot(data=all[!is.na(all$SalePrice),], aes(x=GrLivArea, y=SalePrice))+
-  geom_point(col='black') + geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1)) +
-  scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma) +
-  ggtitle("Sales Price and Ground Living Area")+
+```{r, message=FALSE, warning=FALSE}
+ggplot(data = all[!is.na(all$SalePrice),], aes(x = GrLivArea, y = SalePrice)) +
+  geom_point(col = 'black') + geom_smooth(method = "lm", se = FALSE, color = "blue", aes(group = 1)) +
+  scale_y_continuous(breaks = seq(0, 800000, by = 100000), labels = comma) +
+  ggtitle("Sales Price and Ground Living Area") +
   labs(x = 'Ground Living Area (in square feet)')
-
-# potential outliers found
-outlier1 <- all%>% filter(GrLivArea > 4500)
-outlier1$Id
-all[c(524, 1299, 2550), c('SalePrice', 'GrLivArea', 'OverallQual')]
 
 ```
  <center>
  `Figure 2.4 summarizes the relationship of Sales Price and Ground Living Area of houses.`
 </center>
 
+```{r, message=FALSE, warning=FALSE}
+# potential outliers found
+outlier1 <- all %>%  filter(GrLivArea > 4500)
+outlier1$Id
+all[c(524, 1299, 2550), c('SalePrice', 'GrLivArea', 'OverallQual')]
+
+```
+
+
 <br>
 
 <h4> __GarageCars__ </h4>
   
-The Size of garage shows a positive correlation with SalePrice from level 0-3 but fall at level 4 (non-linear correlation). It make sense because only big houses have large garage, and bigger house usually have higher SalePrice. Also for houses with a garage of capacity of 3 cars(level 3), there are several outliners with much higher SalePrice existing, it must be other factors affecting the outcome price. Something might happen for houses with level 4 garage that needed to explained.
+The Size of garage shows a positive correlation with SalePrice from level 0-3 but fall at level 4 (non-linear correlation). It makes sense because only big houses have a large garage, and bigger houses usually have higher SalePrice. Also for houses with a 3 cars garage (level 3), there are several outliners with much higher SalePrice existing, it must be other factors affecting the outcome price. Something might happen for houses with level 4 garage that needed to be explained.
 
-```{r, GarageCars}
-ggplot(data=all[!is.na(all$SalePrice),], aes(x=factor(GarageCars), y=SalePrice))+
-        geom_boxplot() + labs(x='Size of Garage/car') +
-        scale_y_continuous(breaks= seq(0, 800000, by=100000), labels = comma)+
+```{r, message=FALSE, warning=FALSE}
+ggplot(data = all[!is.na(all$SalePrice),], aes(x = factor(GarageCars), y = SalePrice)) +
+        geom_boxplot() + labs(x = 'Size of Garage/car') +
+        scale_y_continuous(breaks = seq(0, 800000, by = 100000), labels = comma) +
   ggtitle("Sales Price and Garage Capacity")
 
 #potential outliers found
 outlier2 <- all %>% 
-  filter(GarageCars == 3)%>%
+  filter(GarageCars == 3) %>%
   filter(SalePrice > 700000)
 
 
@@ -531,12 +543,12 @@ all[c(524, 1299, 692, 1183), c('SalePrice', 'GrLivArea', 'OverallQual','GarageCa
 <h4> __BsmtFinSF1__ </h4>
 
 BsmtFinSF1: Type 1 basement finished square feet
-```{r, BsmtFinSF1}
+```{r, message=FALSE, warning=FALSE}
 
-ggplot(data=all[!is.na(all$SalePrice),], aes(x=BsmtFinSF1, y=SalePrice))+
-        geom_point(col='black') + geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1))+
+ggplot(data = all[!is.na(all$SalePrice),], aes(x = BsmtFinSF1, y = SalePrice)) +
+        geom_point(col = 'black') + geom_smooth(method = "lm", se = FALSE, color = "blue", aes(group = 1)) +
         scale_x_continuous(limits = c(100 ,2500)) + 
-  ggtitle("Sales Price and Basement Area")+
+  ggtitle("Sales Price and Basement Area") +
   labs(x = 'Basement Area (in square feet)')
   
 
@@ -580,44 +592,52 @@ Neighborhood: Physical locations within Ames city limits
 
 
 <h4> __YearBuilt__ </h4>
-YearBuilt: Original construction date
-```{r, yearbuilt}
 
-ggplot(data=all[!is.na(all$SalePrice),], aes(x=YearBuilt, y=SalePrice))+
-  geom_point(col='black') + 
-  geom_smooth(method = "lm", se=FALSE, color="blue", aes(group=1))+
-  scale_x_continuous(limits = c(1860 ,2020))+
-  ggtitle("Sales Price and Year of house built")+
+<p>YearBuilt: Original construction date.</p>
+
+
+```{r, message=FALSE, warning=FALSE}
+
+ggplot(data = all[!is.na(all$SalePrice),], aes(x = YearBuilt, y = SalePrice)) +
+  geom_point(col = 'black') + 
+  geom_smooth(method = "lm", se = FALSE, color = "blue", aes(group = 1)) +
+  scale_x_continuous(limits = c(1860 ,2020)) +
+  ggtitle("Sales Price and Year of house built") +
   labs(x = 'Year of house built')
 
 ```
+
 <center>
 `Figure 2.7 summarizes the relationship of Sales Price and Year of house built.`
 </center>
 
 <br>
 
-### 2.3 Inferential Models
 
-We will investigate the validity of our hypothesis through using Ordinary Least 
+### 2.5 Inferential Models
+
+We will investigate the validity of our hypothesis by using Ordinary Least 
 Squares to generate three different models.
 
-####2.3.1 Ordinary Least Squares
 
-First we ran a naive OLS model including only the variables of interest in the 
-model. The model had statistical significance with an F-statistic of 26.33 and 
+<h4> 2.5.1 Ordinary Least Squares </h4>
+
+First, we ran a naive OLS model including only the variables of interest in the model
+. The model had statistical significance with an F-statistic of 26.33 and 
 R^{2} of 0.1097. Our variables of interest were statistically significant at the 
 0.05 level with the exception of Car.Miles. In model 2 we included the "Overall 
 Quality" variable and our results improved significantly resulting in a R^{2} of
 0.6537 and an F-statistic of 335.7 . Lastly, Model 3 included 86 all variables 
-in the model,the mechanics behind the OLS regression automatically leads to a 
+in the model, the mechanics behind the OLS regression automatically leads to a 
 higher R^{2} (0.94) but the overall strength of the model was not acceptable 
 (F-statistic of 40.4). Table X compares the coefficients to all the three models.
 
-#####2.3.2 Model 1.0
+<h5> 2.5.2 Model 1.0 </h5>
+
 <center>
 __Model 1.0: Car.Time.min__
 </center>
+
 ```{r Naive Model, message=FALSE, warning=FALSE}
 #OLS Model 1 - very naive considering only the variab
 # naive.model <- lm(SalePrice ~ Car.miles + OverallQual + OverallCond + Mean.price  , data = d_train_noNAs)
@@ -630,11 +650,12 @@ summary(naive.model0)
 
 ```
 
-#####2.3.3 Model 1.1
+<h5> 2.5.3 Model 1.1 </h5>
+
 <center>
 __Model 1.1: Walk.Time.min__
 </center>
-```{r}
+```{r, message=FALSE, warning=FALSE}
 # naive.model1 <- lm(SalePrice ~ Walk.miles + OverallQual +OverallCond + Mean.price  , data = d_train_noNAs)
 # summary(naive.model1)
 
@@ -642,12 +663,12 @@ naive.model1.1 <- lm(SalePrice ~ Walk.time.min + OverallQual +OverallCond + GrLi
 summary(naive.model1.1)
 ```
 
-#####2.3.4 Model 1.2
+<h5> 2.5.4 Model 1.2 </h5>
 
 <center>
 __Model 1.2: Bus.Time.min__
 </center>
-```{r}
+```{r, message=FALSE, warning=FALSE}
 naive.model2 <- lm(SalePrice ~ Bus.time.min + OverallQual +OverallCond + GrLivArea  , data = d_train_noNAs)
 summary(naive.model2)
 ```
@@ -656,7 +677,7 @@ All our three naive models did not have good results, but when comparing the thr
 
 <center>
 
-`Table XX`
+`Table 4: Comparing results from three models`
 
 | Variable      | Model 1.0 - Car.Time.min | Model 1.1 - Walk.time.min | Model 1.2 - Bus.time.min |
 |---------------|--------------------------|---------------------------|--------------------------|
@@ -668,12 +689,13 @@ All our three naive models did not have good results, but when comparing the thr
 | F-Statistic   | 702.5                     | 705.9                      | 706.8                     |
 </center>
 
-#####2.3.5 Model 2.0
+<h5> 2.3.5 Model 2.0 </h5>
 
 <center>
 __Model 2.0: Comprehensive model + Bus.Time.min__
 </center>
-```{r}
+
+```{r, message=FALSE, warning=FALSE}
 m2.train <- lm(SalePrice ~ Bus.time.min + ., data = d_train_noNAs)
 
 #Show only relevant coefficients
@@ -685,7 +707,7 @@ Although we added all variables to Model 2.0, we also lose degrees of freedom an
 
 <center>
 
-`Table XX`
+`Table 5: Results from using all variables in OLS`
 
 | Variable      | Model 2.0 - Full model + Bus.time.min |
 |---------------|---------------------------------------|
@@ -699,14 +721,14 @@ Although we added all variables to Model 2.0, we also lose degrees of freedom an
   
 </center>
 
-###2.4 Lasso
+###2.6 Lasso
 
 The Lasso function will help us select the variables with the highest predictive power on Sales Price. It might also give us a clearer picture that will help us better assess our hypothesis.
 
 Each curve corresponds to a variable. It shows the path of its coefficient against the ℓ1-norm of the whole coefficient vector at as λ varies. The axis above indicates the number of nonzero coefficients at the current λ, which is the effective degrees of freedom (df) for the lasso. Users may also wish to annotate the curves; this can be done by setting label = TRUE in the plot command.
 
 
-```{r Lasso Cross Validation}
+```{r Lasso Cross Validation, message=FALSE, warning=FALSE}
 set.seed(12345) # = Seed for replication
 
 #d_train_noNAs <- na.omit(d_train)
@@ -726,6 +748,7 @@ cv.lasso <- cv.glmnet(x, y)
 
 #coef(cv.lasso, s = "lambda.min")
 ```
+
 <center>
 `Figure 3.1 : Lasso coefficients`
 </center>
@@ -734,13 +757,14 @@ The cross-validation plot suggests that the model works best when it has approxi
  
 It includes the cross-validation curve (red dotted line), and upper and lower standard deviation curves along the λ sequence (error bars). Two selected λ’s are indicated by the vertical dotted lines (see below). 
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 plot(cv.lasso) 
 ```
+
  <center>
  `Figure 3.2: Cross Validation for Lasso`
- </center>
  
+ `Table 6: Lasso Coefficients`
 ```{r, warning=FALSE, message=FALSE, echo=FALSE}
 set.seed(12345) # = Seed for replication
 
@@ -766,19 +790,18 @@ myLasso.Results <- data.frame(
 
 
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 pander(myLasso.Results)
 #pander(filter(myLasso.Results, level.coefs != "low" ))
 ```
 
 </center>
 
-###2.5 Model 4 - Improved OLS
+###2.7 Model 4 - Improved OLS
 
-Our new model with only 12 variables (instead of all variables) has an adjusted R-squared of __0.89__ and an F-Statistic of __616.1__ - a significant result in comparison to an adjusted R-square of __0.9417__ and an F-statistic of 52.94 (including all 80 variables!). In this adapted model, our variables of interest (Bus.time.min) have a very small coefficient and is not statistically significant. All other variable were statistically significant at the 0.05 level.
+Our new model with only 12 variables (instead of all variables) has an adjusted R-squared of __0.89__ and an F-Statistic of __616.1__ - a significant result in comparison to an adjusted R-square of __0.9417__ and an F-statistic of 52.94 (including all 80 variables!). In this adapted model, our variables of interest (Bus.time.min) have a very small coefficient and is not statistically significant. All other variables were statistically significant at the 0.05 level.
 
-Model 4
-```{r}
+```{r Model 4, message=FALSE, warning=FALSE}
 myLasso.Results <- myLasso.Results[-1,]
 var.lasso <- myLasso.Results[,1]
 var.lasso
@@ -789,8 +812,9 @@ m4.train <- lm(SalePrice ~ Bus.time.min + MSZoning + OverallQual + YearBuilt +  
 summary(m4.train)
 ```
 
-Model 5
-```{r}
+<h5> Model 5 </h5>
+
+```{r Model 5, message=FALSE, warning=FALSE}
 
 pref.data <- d_train_noNAs %>%
   filter(SalePrice >= 250000)
@@ -802,11 +826,12 @@ m5.train <- lm(SalePrice ~ Bus.time.min + MSZoning + OverallQual + YearBuilt +  
 summary(m5.train)
 ```
 
-###2.5 Results
+###2.8 Results
 
-The result from Model 3 provides evidece against the initial hypothesis that there is a positive association between final sales price and distance from ISU. In fact, the model reveals the opposite, on average, for each additional mintute it takes from a neighborhood to ISU campus is associated with __a price drop of approximately $615.7__ in the final sales price. Although the result is statistically significant at the 0.05 level, the result was not substantive. Therefore, we can conclude that distance from the ISU campus is not a statistically important factor when determining the house/apt sales price. So our
-client should be feel free to select a house regardless of its distance to ISU campus.
+The result from Model 3 provides evidence against the initial hypothesis that there is a positive association between the final sales price and distance from ISU. In fact, the model reveals the opposite, on average, for each additional minute it takes from a neighborhood to ISU campus is associated with __a price drop of approximately $615.7__ in the final sales price. Although the result is statistically significant at the 0.05 level, the result was not substantive. Therefore, we can conclude that distance from the ISU campus is not a statistically important factor when determining the house/apt sales price. So our
+the client should feel free to select a house regardless of its distance to ISU campus.
 
+***
 
 ## 3. Predictive Model
 In this section, we aim to find the most important variables that affect the Sales Price and build predictive models based on that. We will compare the effectiveness of different predictive models and choose the best model.
@@ -814,7 +839,7 @@ In this section, we aim to find the most important variables that affect the Sal
 ### 3.1 Variable Selection
 
 #### 3.1.1 Correlation with SalePrice
-```{r}
+```{r, message=FALSE, warning=FALSE}
 # Neighborhood
 train <- read.csv("New_Data.csv")
 train <- na.omit(train)
@@ -823,10 +848,10 @@ train <- na.omit(train)
 
 We would like to see What numeric variables correlated with SalePrice.
 
-According to the correlation table, variable 'Overall Quality'(Overall material and finish quality), the 'GrLivArea' (‘Above Grade’ Living Area) and 'GarageCars'(Size of garage in car capacity) are the top 3 variables that highly correlated to SalePrice.
-For the rest,it is also clear the multicollinearity is an issue. For example: the correlation between GarageCars and GarageArea is very high (0.89), and both have similar (high) correlations with SalePrice. The other 6 six variables with a correlation higher than 0.5 with SalePrice are: -TotalBsmtSF: Total square feet of basement area -1stFlrSF: First Floor square feet -FullBath: Full bathrooms above grade -TotRmsAbvGrd: Total rooms above grade (does not include bathrooms) -YearBuilt: Original construction date -YearRemodAdd: Remodel date (same as construction date if no remodeling or additions)
+According to the correlation table, variable 'Overall Quality'(Overall material and finish quality), the 'GrLivArea' (‘Above Grade’ Living Area) and 'GarageCars'(Size of the garage in car capacity) are the top 3 variables that highly correlated to SalePrice.
+For the rest, it is also clear the multicollinearity is an issue. For example, the correlation between GarageCars and GarageArea is very high (0.89), and both have similar (high) correlations with SalePrice. The other 6 six variables with a correlation higher than 0.5 with SalePrice are: -TotalBsmtSF: Total square feet of basement area -1stFlrSF: First Floor square feet -FullBath: Full bathrooms above grade -TotRmsAbvGrd: Total rooms above grade (does not include bathrooms) -YearBuilt: Original construction date -YearRemodAdd: Remodel date (same as construction date if no remodeling or additions)
 
-```{r correlation2}
+```{r correlation2, message=FALSE, warning=FALSE}
 train$GarageYrBlt <- as.integer(train$GarageYrBlt)
 numericVars <- which(sapply(train, is.numeric)) #index vector numeric variables
 factorVars <- which(sapply(train, is.factor)) #index vector factor variables
@@ -834,10 +859,10 @@ all_numVar <- train[, numericVars]
 cor_numVar <- cor(all_numVar, use = "pairwise.complete.obs")
 cor_sorted <- as.matrix(sort(cor_numVar[,'SalePrice'], decreasing = TRUE))
  #select only high corelations
-CorHigh <- names(which(apply(cor_sorted, 1, function(x) abs(x)>0.5)))
+CorHigh <- names(which(apply(cor_sorted, 1, function(x) abs(x) > 0.5)))
 cor_numVar <- cor_numVar[CorHigh, CorHigh]
 
-corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt", tl.cex = 0.7,cl.cex = .7, number.cex=.7)
+corrplot.mixed(cor_numVar, tl.col = "black", tl.pos = "lt", tl.cex = 0.7,cl.cex = .7, number.cex = .7)
 ```
  <center>
  `Figure 4: Correlation Table of Sales Price and all numeric variables`
@@ -845,7 +870,7 @@ corrplot.mixed(cor_numVar, tl.col="black", tl.pos = "lt", tl.cex = 0.7,cl.cex = 
  
 Since there are several paris of varibles are highly correlated to each other, we can simply drop one of them.Therefore, I chose to drop 'TotalRmsAbvGrd'(vs GrLivArea); 'GarageArea'(vs GarageCars); 'TotalBsmtSF' (vs X1stFkrSF); 'YearRemodAdd'(vs YearBiult)
 
-```{r drop variables and outliers}
+```{r drop variables and outliers, message=FALSE, warning=FALSE}
 dropVars <- c('YearRemodAdd', 'GarageArea', 'TotalBsmtSF', 'TotalRmsAbvGrd')
 
 train <- train[,!(names(train) %in% dropVars)]
@@ -856,8 +881,9 @@ write_csv(train, 'Final_data.csv')
 
 ### 3.2 Random Forest
 
-The correlation table above provide a good overview of the most important numeric variables and multicolinerity among those variables. Next, I want to get an overview of the most important variables including the categorical variables.
-```{r rf again}
+The correlation table above provides a good overview of the most important numeric variables and multicollinearity among those variables. Next, I want to get an overview of the most important variables including the categorical variables.
+
+```{r rf again, message=FALSE, warning=FALSE}
 train <- read.csv('Final_data.csv')
 set.seed(123)
 quick_RF <- randomForest(x = train[, -76], y = train$SalePrice, ntree = 200,importance = TRUE)
@@ -865,7 +891,7 @@ imp_RF <- importance(quick_RF)
 imp_DF <- data.frame(Variables = row.names(imp_RF), MSE = imp_RF[,1])
 imp_DF <- imp_DF[order(imp_DF$MSE, decreasing = TRUE),]
 
-ggplot(imp_DF[1:20,], aes(x = reorder(Variables, MSE), y = MSE, fill = MSE)) + geom_bar(stat = 'identity') + labs(x = 'Variables', y= '% increase MSE if variable is randomly permuted') + coord_flip() + theme(legend.position = "none")
+ggplot(imp_DF[1:20,], aes(x = reorder(Variables, MSE), y = MSE, fill = MSE)) + geom_bar(stat = 'identity') + labs(x = 'Variables', y = '% increase MSE if variable is randomly permuted') + coord_flip() + theme(legend.position = "none")
 ```
  <center>
  `Figure 5: Varaible selection by random forest`
@@ -873,7 +899,7 @@ ggplot(imp_DF[1:20,], aes(x = reorder(Variables, MSE), y = MSE, fill = MSE)) + g
  
 ### 3.3 Predictive Models
 
-We pick variables that increase MSE if variable is randomly permuted greater than 10% (exclude two variables which are X1ndFlrSF and X2ndFlrSF which representing First/Second floor square feet, and are included in GrLivArea)。 Therefore, we choose to include total 5 varibales: GarageCars+ BsmtFinSF1+ OverallQual + Neighborhood + GrLivArea in our models.
+We pick variables that increase MSE if variable is randomly permuted greater than 10% (exclude two variables which are X1ndFlrSF and X2ndFlrSF which representing First/Second floor square feet, and are included in GrLivArea)。 Therefore, we choose to include total 5 variables: GarageCars+ BsmtFinSF1+ OverallQual + Neighborhood + GrLivArea in our models.
 
 For model evaluation, since our class labels are not uniformly distributed, we decided to focus on four key metrics:
 1) 'Overall classification accuracy' which is defined as the fraction of instances that are correctly classified;
@@ -881,10 +907,10 @@ For model evaluation, since our class labels are not uniformly distributed, we d
 3) 'Recall' which is the fraction of instances of a class that were correctly predicted;
 4) 'F1 score' which is defined as the harmonic mean (or a weighted average) of precision and recall.
 
-```{r ols}
+```{r ols, message=FALSE, warning=FALSE}
 
 train$Mean.price <- cut(train$SalePrice, breaks = c(100,200000,300000, Inf), labels = c("Lower", "Median ", "Higher") )
-a <- train%>%
+a <- train %>%
   filter(Mean.price == 'Higher')
 
 train1 <- train[1:1092,]
@@ -892,7 +918,7 @@ test1 <- train[1092:1447,]
 
 ```
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 train1 <- subset(train1, select = -c(Utilities,Street))
 test1 <- subset(test1, select = -c(Utilities,Street))
 test1 <- test1[!test1$Id == 1004,]
@@ -906,20 +932,20 @@ test1 <- test1[!test1$Id == 596,]
 <br>
 
 #### 3.3.1 Vector Generalized Linear Model
-Train the Vector Generalized Linear Model and summarize the prediction results of training set
-```{r, Vector Generalized Linear Models - train}
-library(VGAM)
+Train the Vector Generalized Linear Model and summarize the prediction results of the training set
+```{r, message=FALSE, warning=FALSE}
+
 # with interaction term
-fit_log <- vglm(Mean.price ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLivArea, family=multinomial, data=train1)
+fit_log <- vglm(Mean.price ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLivArea, family = multinomial, data = train1)
 # summarize the fit
 
 
 # make predictions - training set
-probabilities <- predict(fit_log, newdata = train1, type="response")
+probabilities <- predict(fit_log, newdata = train1, type = "response")
 predictions <- apply(probabilities, 1, which.max)
-predictions[which(predictions=="Lower")] <- levels(train1$Mean.price)[1]
-predictions[which(predictions=="Median")] <- levels(train1$Mean.price)[2]
-predictions[which(predictions=="Higher")] <- levels(train1$Mean.price)[3]
+predictions[which(predictions == "Lower")] <- levels(train1$Mean.price)[1]
+predictions[which(predictions == "Median")] <- levels(train1$Mean.price)[2]
+predictions[which(predictions == "Higher")] <- levels(train1$Mean.price)[3]
 
 # summarize accuracy - training set
 tbl_log_train <- table(predictions, train1$Mean.price)
@@ -938,15 +964,15 @@ f1 = 2 * precision * recall / (precision + recall)
 data.frame(precision, recall, f1) 
 ```
 
-Summarize the prediction results of Testing set
-```{r, Vector Generalized Linear Models- test}
+Summarize the prediction results of the Testing set
+```{r, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 
 # make predictions - testing set
-probabilities <- predict(fit_log, newdata = test1, type="response")
+probabilities <- predict(fit_log, newdata = test1, type = "response")
 predictions <- apply(probabilities, 1, which.max)
-predictions[which(predictions=="Lower")] <- levels(test1$Mean.price)[1]
-predictions[which(predictions=="Median")] <- levels(test1$Mean.price)[2]
-predictions[which(predictions=="Higher")] <- levels(test1$Mean.price)[3]
+predictions[which(predictions == "Lower")] <- levels(test1$Mean.price)[1]
+predictions[which(predictions == "Median")] <- levels(test1$Mean.price)[2]
+predictions[which(predictions == "Higher")] <- levels(test1$Mean.price)[3]
 
 # summarize accuracy - testing set
 tbl_log_test <- table(predictions, test1$Mean.price)
@@ -968,8 +994,8 @@ data.frame(precision, recall, f1)
 <br>
 
 #### 3.3.2 Linear Discriminant Analysis
-Train the Linear Discriminant Analysis Model and summarize the prediction results of training set
-```{r lda}
+Train the Linear Discriminant Analysis Model and summarize the prediction results of the training set
+```{r lda, message=FALSE, warning=FALSE}
 library(MASS)
 LDA <- lda(Mean.price ~ GarageCars+ BsmtFinSF1+ OverallQual+ Neighborhood + GrLivArea,data = train1)
 
@@ -994,8 +1020,8 @@ f1 = 2 * precision * recall / (precision + recall)
 data.frame(precision, recall, f1) 
 ```
 
-Summarize the prediction results of testing set
-```{r}
+Summarize the prediction results of the testing set
+```{r, message=FALSE, warning=FALSE}
 
 # make predictions and summarize accuracy - testing set
 y_hat_LDA_test <- predict(LDA, newdata = test1)
@@ -1020,8 +1046,8 @@ data.frame(precision, recall, f1)
 <br>
 
 #### 3.3.3 Support Vector Machine
-Train the Support Vector Machine Model and summarize the prediction results of training set
-```{r svm}
+Train the Support Vector Machine Model and summarize the prediction results of the training set
+```{r svm, message=FALSE, warning=FALSE}
 library(e1071)
 
 classifier = svm(formula = Mean.price ~ . ,data = train1[,-74] ,
@@ -1047,7 +1073,7 @@ f1 = 2 * precision * recall / (precision + recall)
 data.frame(precision, recall, f1) 
 ```
 Summarize the prediction results of testing set
-```{r}
+```{r, message=FALSE, warning=FALSE}
 
 # Prmake predictions and summarize accuracy - test set
 y_pred_test = predict(classifier, newdata = test1[,-c(74,75)])
@@ -1069,10 +1095,11 @@ data.frame(precision, recall, f1)
 <br>
 
 #### 3.3.4 Random Forest Model
-Train the Random Forest Model and summarize the prediction results of training set
-```{r rf predict}
+Train the Random Forest Model and summarize the prediction results of the training set
+```{r rf predict, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 
-RF <- randomForest(x=train1[, (names(train1) %in% c("OverallQual","BsmtFinSF1","GarageCars",'Neighborhood','GrLivArea'))], y=train1$Mean.price, ntree=150,importance=TRUE)
+RF <- randomForest(x = train1[, (names(train1) %in% c("OverallQual","BsmtFinSF1","GarageCars",'Neighborhood','GrLivArea'))], y = train1$Mean.price, ntree = 150, importance = TRUE)
+
 y_pred_train = predict(RF, newdata = train1[-c(74,75)])
 y_pred_test = predict(RF, newdata = test1[-c(74,75)])
 
@@ -1094,8 +1121,8 @@ f1 = 2 * precision * recall / (precision + recall)
 data.frame(precision, recall, f1) 
 ```
 
-Summarize the prediction results of training set
-```{r}
+Summarize the prediction results of the training set
+```{r, eval=FALSE, message=FALSE, warning=FALSE, include=FALSE}
 # make predictions and summarize accuracy - testing set
 rf_cm = table(test1[,75], y_pred_test)
 rf_cm
@@ -1126,41 +1153,68 @@ plot(RF)
 
 #####Vector Generalized Linear Model
 The prediction accuracy of Vector Generalized Linear Model in training set is 0.8937729.
-The prediction accuracy of Vector Generalized Linear Model in testing set is 0.8997135.
-For training set, as the Vector Generalized Linear classifier attempted to predict 'Lower' class most of the time, better performance in metrics for 'Lower' was achieved while the other two categories were poorly predicted. For testing set,Vector Generalized Linear Model best performed in 'Lower' category while poorly performed in two other categories. There were also a trade off between 'Median' and 'Higher' groups as the recall for 'Medium' group is higher(0.81) but the precission(0.69) is poorer, just opposite to 'Higher' which has higher precision(0.84) but lower recall(0.72). As consequence, it results only a fair overal prediction accuracy.
+The prediction accuracy of Vector Generalized Linear Model in the testing set is 0.8997135.
+For training set, as the Vector Generalized Linear classifier attempted to predict 'Lower' class most of the time, better performance in metrics for 'Lower' was achieved while the other two categories were poorly predicted. For the testing set, Vector Generalized Linear Model best performed in 'Lower' category while poorly performed in two other categories. There was also a trade-off between 'Median' and 'Higher' groups as the recall for 'Medium' group is higher(0.81) but the precision(0.69) is poorer, just opposite to 'Higher' which has higher precision(0.84) but lower recall(0.72). As consequence, it results in only a fair overall prediction accuracy.
 
 <br>
 
 ####Linear Discriminant Analysis Model
 The prediction accuracy of Linear Discriminant Analysis Model in training set is 0.8424908.
-The prediction accuracy of Linear Discriminant Analysis Model in testing set is 0.8681948.
-For training set, as the Linear Discriminant Analysis classifier attempted to predict 'Lower' class most of the time, better performance in metrics for 'Lower' was achieved while the other two categories were much poorly predicted. For testing set, Linear Discriminant Analysis Model best performed in 'Lower' category while poorly performed in two other categories. As consequence, it results a poor overal prediction accuracy.
+The prediction accuracy of Linear Discriminant Analysis Model in the testing set is 0.8681948.
+For training set, as the Linear Discriminant Analysis classifier attempted to predict 'Lower' class most of the time, better performance in metrics for 'Lower' was achieved while the other two categories were much poorly predicted. For the testing set, Linear Discriminant Analysis Model best performed in 'Lower' category while poorly performed in two other categories. As consequence, it results in a poor overall prediction accuracy.
 
 <br>
 
 ####Support Vector Machine Model
 The prediction accuracy of Support Vector Machine Model in training set is 0.9798535.
-The prediction accuracy of Support Vector Machine Model in testing set is 0.9169054.
-For testing set, Support Vector Machine Model best performed in 'Lower' category while poorly performed in two other categories. There were also a trade off between 'Median' and 'Higher' groups as the recall for 'Higher' group is higher(0.84) but the precission(0.78) is poorer, just opposite to 'Median' which has higher precision but lower recall.
+The prediction accuracy of Support Vector Machine Model in the testing set is 0.9169054.
+For the testing set, Support Vector Machine Model best performed in 'Lower' category while poorly performed in two other categories. There was also a trade-off between 'Median' and 'Higher' groups as the recall for 'Higher' group is higher(0.84) but the precision(0.78) is poorer, just opposite to 'Median' which has higher precision but lower recall.
 
 <br>
 
 #### Random Forest Model
 The prediction accuracy of Random Forest Model in training set is 0.9945055.
-The prediction accuracy of Random Forest Model in testing set is 0.8939828.
+The prediction accuracy of Random Forest Model in the testing set is 0.8939828.
 For training set, Random Forest Model gave the best fitting in all three groups 
-For testing set, Random Forest Model best performed in 'Lower' category while poorly performed in two other categories as precission for 'Median' and 'Higher' groups are around 0.7 ~ 0.8.
+For the testing set, Random Forest Model best performed in 'Lower' category while poorly performed in two other categories as precision for 'Median' and 'Higher' groups are around 0.7 ~ 0.8.
 
 <br>
 
-To conclude, Vector Generalized Linear Model and Linear Discriminant Analysisr Model gave results with fair accuracy and no obvious underfitting were observed. The Support Vector Machine Model gave the best accuracy in testing set (0.917) and has small overfitting problem in training set (0.980). The Random Forest Model gave the best accuracy in training set (0.995) almost 100%, but significant overfitting of training set was observed as the accuracy for testing set is only 0.894. Therefore, we concluded that the Support Vector Machine Model is our best predictive model.
+Lastly, Vector Generalized Linear Model and Linear Discriminant Analysis Model gave results with fair accuracy and no obvious underfitting was observed. The Support Vector Machine Model gave the best accuracy in testing set (0.917) and has small overfitting problem in training set (0.980). The Random Forest Model gave the best accuracy in the training set (0.995) almost 100%, but significant overfitting of training set was observed as the accuracy of the testing set is only 0.894. Therefore, we concluded that the Support Vector Machine Model is our best predictive model.
+
+***
 
 ## 4. Conclusion
 
+In this consulting project, our main goal is to advise our client on where is the best neighborhood to buy a house and how much a house he likes may cost. After analyzing the housing data from the city of Ames, IA, we are confident that the best neighborhoods for our client, are  College Creek and Crawford. Both neighborhoods are within 5 minutes from ISU campus and have an average price of \$197,000 and $210,000 respectively. Both neighborhoods have an overall quality above average. Houses in Crawford have an overall condition way above the average although the journey to campus by bus is a bit longer than College Creek. College Creek houses, on average, has an okay overall condition. Table XX summarizes the findings:
 
-Next Steps:
-1)Time Series Analysis on Pricing
-2)Cluster Analysis on Neighborhood
+<center>
+
+`Table 7: Recommended Neighboorhoods for the Client`
+
+| Code    | FullName      | Car.Time.min | Walk.time.min | Bus.time.min | Avg Final Price | Overall Qual | Overall Cond |
+|---------|---------------|--------------|---------------|--------------|-----------------|--------------|--------------|
+| CollgCr | College Creek | 5            | 12            | 14           | $197,703.80     | 6.63         | 5.241611     |
+| Crawfor | Crawford      | 5            | 20            | 18           | $210,824.74     | 6.28         | 6.66         |
+
+</center>
+
+Furthermore, our inference models indicate that distance from campus is not a significant predictor on final sales price of the house. In other words, although the relationship between the final sales price and distance from ISU campus proved to be statistically significant at the 0.05 level, the result is __somewhat substantive__ as it only changes around 3% (the closest house to campus) - 18% (the furthest from campus) of the final sales price of the house (. The client should feel free to choose the location of his house according to his own preferences without worrying about the effect on the final sales price. 
+
+Lastly, we performed predictive analysis of the sales price of a house....
+
+
+Should the client choose to continue with the project the following next steps are essential to improve our results and provide further guidance in this important purchase:
+
+1) Time Series Analysis on Pricing
+
+2) Cluster Analysis on Neighborhood
+3) Specific client data
+4) Analyze city-wide plans and developments that could affect our models and forecasting.
+
+***
+
+***
 
 ##Annex
 
