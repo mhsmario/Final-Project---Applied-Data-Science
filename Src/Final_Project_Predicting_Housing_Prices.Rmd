@@ -102,12 +102,12 @@ library(VIM)
 
 ```{r}
 #all <- read.csv("train.csv")
-all <- read.csv("train.csv")
+all <- read.csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Raw/train.csv")
 set.seed(12345)
 in_train <- createDataPartition(y = all$SalePrice, p = 3 / 4, list = FALSE) # Split data into training and testing and recombine them
 training <- all[ in_train, ] # three fourth of data go to training
 testing  <- all[-in_train, ]
-
+# combine the data in the order of training + testing in order to prepare for EDA
 all <- rbind(training, testing)
 ```
 
@@ -325,7 +325,7 @@ New_Data <- read_csv("New_Data.csv")
 #Load the data with distance between ISU and
 
 #distance <- read_csv("distance.csv")
-distance <- read_csv("distance.csv")
+distance <- read_csv("/Users/lizhizicui/Desktop/Final-Project---Applied-Data-Science/Data/Processed/distance.csv")
 #Add the distance data to both Train and Test datasets.
 d_train <- left_join(New_Data, distance, by = "Neighborhood")
 ```
@@ -371,11 +371,14 @@ sales price up to $150,000.
 <center>
 ```{r, message=FALSE, warning=FALSE}
 #plot the results
-ggplot(neighb) + geom_col(aes(neighb$rn, y = neighb$mean.price,  fill = df$rn)) + 
+ggplot(neighb) + 
+  geom_col(aes(neighb$rn, y = neighb$mean.price,  fill = df$rn)) + 
   coord_flip() + 
+  theme(legend.position = 'none')+
   ggtitle("Average Sales Price by Neighborhood") +
   ylab("Average Sales Price") + scale_y_continuous(labels = scales::dollar) +
   xlab("Neighborhood") + coord_flip()
+  
 ```
  <center>
  `Figure 1.1 summarizes the the average sales price for each neighborhood in Ames, Iowa.`
@@ -416,13 +419,14 @@ SalePrice: the property's sale price in dollars
  
 ```{r SalesPrice, message=FALSE, warning=FALSE}
 summary(all$SalePrice)
-
-hist(all$SalePrice, 
+sp <- all$SalePrice / 1000
+min(sp)
+hist(sp, 
      main = 'Histogram of Sale Price',
      xlab = 'Sale Price',
-     breaks = seq(30000, 760000, 5000),prob = TRUE)
-lines(density(all$SalePrice), col = "blue", lwd = 2)       
-lines(density(all$SalePrice, adjust = 2), lty = "dotted")
+     breaks = seq(0, 760, 10),prob = TRUE)
+lines(density(sp), col = "blue", lwd = 2)       
+lines(density(sp, adjust = 2), lty = "dotted")
 
 ```
  <center>
@@ -506,10 +510,11 @@ ggplot(data = all[!is.na(all$SalePrice),], aes(x = GrLivArea, y = SalePrice)) +
 </center>
 
 ```{r, message=FALSE, warning=FALSE}
-# potential outliers found
+# potential outliers: houses with large GrLivArea but relatively low Sales Price 
 outlier1 <- all %>%  filter(GrLivArea > 4500)
-outlier1$Id
-all[c(524, 1299, 2550), c('SalePrice', 'GrLivArea', 'OverallQual')]
+
+# checking the Overall Quanlity rating of these points to see if the low sales pricr is due to poor quality
+all[c(524, 1299, 2550), c('SalePrice', 'GrLivArea', 'OverallQual')] 
 
 ```
 
@@ -875,8 +880,8 @@ dropVars <- c('YearRemodAdd', 'GarageArea', 'TotalBsmtSF', 'TotalRmsAbvGrd')
 
 train <- train[,!(names(train) %in% dropVars)]
 
-train <- train[-c(524, 1299, 2550),]
-write_csv(train, 'Final_data.csv')
+train <- train[-c(524, 1299, 2550),] # removig outliers
+write_csv(train, 'Final_data.csv') # save to a new file
 ```
 
 ### 3.2 Random Forest
@@ -913,12 +918,14 @@ train$Mean.price <- cut(train$SalePrice, breaks = c(100,200000,300000, Inf), lab
 a <- train %>%
   filter(Mean.price == 'Higher')
 
+# split into training and testing set 
 train1 <- train[1:1092,]
 test1 <- train[1092:1447,]
 
 ```
 
 ```{r, message=FALSE, warning=FALSE}
+# removing unnecessary varibles and factor levels
 train1 <- subset(train1, select = -c(Utilities,Street))
 test1 <- subset(test1, select = -c(Utilities,Street))
 test1 <- test1[!test1$Id == 1004,]
@@ -1201,13 +1208,13 @@ In this consulting project, our main goal is to advise our client on where is th
 
 Furthermore, our inference models indicate that distance from campus is not a significant predictor on final sales price of the house. In other words, although the relationship between the final sales price and distance from ISU campus proved to be statistically significant at the 0.05 level, the result is __somewhat substantive__ as it only changes around 3% (the closest house to campus) - 18% (the furthest from campus) of the final sales price of the house (. The client should feel free to choose the location of his house according to his own preferences without worrying about the effect on the final sales price. 
 
-Lastly, we performed predictive analysis of the sales price of a house....
+Lastly, we performed predictive analysis of the sales price of a house. By analysis, we found that there are five most important factors that affect the final sales price of a house: internally, all of the Overall Quality of the house; the above ground living area, the basement area and the garage capacity of the house affect the final sales price; externally, which neighbourhood the house in Ames, IA the house located in matters quite a lot on the final sales price. 
+As for predictive model, we applied data into four different types of classification models (Vector Generalized Linear Model, Linear Discriminant Analysis Model, Suppoprt Vector Machine Model and Random Forest Models) and found out the support vector machine model gave the best predictive result in testing data (accuracy = 0.9169) among all. 
 
 
 Should the client choose to continue with the project the following next steps are essential to improve our results and provide further guidance in this important purchase:
 
 1) Time Series Analysis on Pricing
-
 2) Cluster Analysis on Neighborhood
 3) Specific client data
 4) Analyze city-wide plans and developments that could affect our models and forecasting.
